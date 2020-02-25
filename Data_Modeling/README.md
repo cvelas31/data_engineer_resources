@@ -84,8 +84,64 @@ Provides scalability and high availability without compromising performance. Lin
 
 **Caveats to NoSQL and ACID Transactions**
 There are some NoSQL databases that offer some form of ACID transaction. As of v4.0, MongoDB added multi-document ACID transactions within a single replica set. With their later version, v4.2, they have added multi-document ACID transactions in a sharded/partitioned deployment.
+-----------
+
+# Relational Databases
+
+## Definitions
+- Database: Set of related data and is organized
+- Database Management System: Acces to the data is provided by this software. proveides access to database.
+
+### Rule 1: The information rule:
+All information in a relational database is represented explicitly at the logical level and in exactly one way – by values in tables.
 
 
+## Importance of Relational Databases:
+- Standardization of data model: Once your data is transformed into the rows and columns format, your data is standardized and you can query it with SQL
+- Flexibility in adding and altering tables: Relational databases gives you flexibility to add tables, alter tables, add and remove data.
+- Data Integrity: Data Integrity is the backbone of using a relational database. Data typing and formats
+- Structured Query Language (SQL): A standard language can be used to access the data with a predefined language.
+- Simplicity : Data is systematically stored and modeled in tabular format.
+- Intuitive Organization: The spreadsheet format is intuitive but intuitive to data modeling in relational databases.
 
+### Online Analytical Processing (OLAP):
+Databases optimized for these workloads allow for complex analytical and ad hoc queries, including aggregations. These type of databases are optimized for reads.
 
+### Online Transactional Processing (OLTP):
+Databases optimized for these workloads allow for less complex queries in large volume. The types of queries for these databases are read, insert, update, and delete.
 
+The key to remember the difference between OLAP and OLTP is analytics (A) vs transactions (T). If you want to get the price of a shoe then you are using OLTP (this has very little or no aggregations). If you want to know the total stock of shoes a particular store sold, then this requires using OLAP (since this will require aggregations).
+
+Ex: Agreggations and analytics -- OLAP queries
+Price or gather infromation -- OLTP queries
+
+## Structuring Database
+### Normalization
+To reduce data redundancy and increase data integrity. The answer of a query is the correct answer (Integrity)
+Feels natural. Reduce copies. Able to update data only in one place.
+
+**Objective**
+- To free the database from unwanted insertions, updates and deletion dependencies. (Update data only in just one place)
+- To reduce the need for refactoring the database as new types of data are introduced. If new columns or data. Only add a table with a foreign key.
+- To make the relational model more informative to users. (Real life concepts, intuitive)
+- To make the database neutral to the query statistics. Not design tables for particular queries. Just have properly the information.
+
+**Process**
+- How to reach First Normal Form (1NF):
+    - Atomic values: each cell contains unique and single values
+    - Be able to add data without altering tables
+    - Separate different relations into different tables
+    - Keep relationships between tables together with foreign keys
+- Second Normal Form (2NF):
+    - Have reached 1NF
+    - All columns in the table must rely on the Primary Key
+- Third Normal Form (3NF):
+    - Must be in 2nd Normal Form
+    - No transitive dependencies
+    - Remember, transitive dependencies you are trying to maintain is that to get from A-> C, you want to avoid going through B.
+- When to use 3NF:
+    - When you want to update data, we want to be able to do in just 1 place. We want to avoid updating the table in the Customers Detail table (in the example in the lecture slide).
+
+### Denormalisation
+Must be done in read heavy workloads to increase performance. 
+Not natural. Duplicate copies of the data for performance reasosns. This tables are going to be focused according to the query
