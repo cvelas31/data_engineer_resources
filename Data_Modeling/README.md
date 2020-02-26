@@ -84,9 +84,19 @@ Provides scalability and high availability without compromising performance. Lin
 
 **Caveats to NoSQL and ACID Transactions**
 There are some NoSQL databases that offer some form of ACID transaction. As of v4.0, MongoDB added multi-document ACID transactions within a single replica set. With their later version, v4.2, they have added multi-document ACID transactions in a sharded/partitioned deployment.
+
 -----------
 
 # Relational Databases
+
+**SUMMARY:** 
+What we learned:
+What makes a database a relational database and Codd’s 12 rules of relational database design
+The difference between different types of workloads for databases OLAP and OLTP
+The process of database normalization and the normal forms.
+Denormalization and when it should be used.
+Fact vs dimension tables as a concept and how to apply that to our data modeling
+How the star and snowflake schemas use the concepts of fact and dimension tables to make getting value out of the data easier.
 
 ## Definitions
 - Database: Set of related data and is organized
@@ -112,7 +122,10 @@ Databases optimized for these workloads allow for less complex queries in large 
 
 The key to remember the difference between OLAP and OLTP is analytics (A) vs transactions (T). If you want to get the price of a shoe then you are using OLTP (this has very little or no aggregations). If you want to know the total stock of shoes a particular store sold, then this requires using OLAP (since this will require aggregations).
 
-Ex: Agreggations and analytics -- OLAP queries
+Ex: 
+
+Agreggations and analytics -- OLAP queries
+
 Price or gather infromation -- OLTP queries
 
 ## Structuring Database
@@ -145,3 +158,182 @@ Feels natural. Reduce copies. Able to update data only in one place.
 ### Denormalisation
 Must be done in read heavy workloads to increase performance. 
 Not natural. Duplicate copies of the data for performance reasosns. This tables are going to be focused according to the query
+
+JOINS on the database allow for outstanding flexibility but are extremely slow. If you are dealing with heavy reads on your database, you may want to think about denormalizing your tables. You get your data into normalized form, and then you proceed with denormalization. So, denormalization comes after normalization.
+
+**Logical Design Change**
+- The designer is incharge of keeping data consistent
+- Reads will be faster (select)
+- Writes will be slower (Insert, update, delete)
+
+## Fact and Dimension Tables
+The following image shows the relationship between the fact and dimension tables for the example shown in the video. As you can see in the image, the unique primary key for each Dimension table is included in the Fact table.
+
+**Fact tables**
+Fact tables constists of the measurements, metrics or facts of a business process. Ex: Consumer ID
+
+**Dimension table**
+A structure that categorizes facts and measures in order to enable users to answer business questions. Dimensios are people, products, place and time.
+
+In this example, it helps to think about the Dimension tables providing the following information:
+
+- Where the product was bought? (Dim_Store table)
+- When the product was bought? (Dim_Date table)
+- What product was bought? (Dim_Product table)
+The Fact table provides the metric of the business process (here Sales).
+- How many units of products were bought? (Fact_Sales table)
+
+![Imagen1][fact_dimension]
+
+If you are familiar with Entity Relationship Diagrams (ERD), you will find the depiction of STAR and SNOWFLAKE schemas in the demo familiar. The ERDs show the data model in a concise way that is also easy to interpret. ERDs can be used for any data model, and are not confined to STAR or SNOWFLAKE schemas. Commonly available tools can be used to generate ERDs. However, more important than creating an ERD is to learn more about the data through conversations with the data team so as a data engineer you have a strong understanding of the data you are working with.
+
+### Implementing different schemas
+- **STAR SCHEMA**: Is the simplest style of data mart schema. Consists of one or more fact tables referencing any number of dimension tables.
+    - Star shape
+    - A fact table is at its center. 
+    - Dimension table surrounds the fact table representing the star's points.
+    - **Benefits**:
+        - Denormalized
+        - Simplifies queries
+        - Fast aggregations
+    - **Drawbacks**:
+        - Issues that come with denormalization
+        - Data integrity
+        - Decrease query flexibility
+        - Many to many relationship
+
+- **SNOWFLAKE SCHEMA**: Logical arrangement of tables in a multidimensional database represented by centralized fact tables which are connected to multiple dimensions.
+
+### Snowflake vs Star
+- Star Schema is a special, simplified case of the snowflake schema
+- Star schema doen not allow for one to many relationships while snowflake schema does
+- Snowflake schema is more normalized than Star schema but only in 1NF or 2NF
+
+# Data Definitions and Constraints
+The CREATE statement in SQL has a few important constraints that are highlighted below
+
+## NOT NULL
+The NOT NULL constraint indicates that the column cannot contain a null value.
+Here is the syntax for adding a NOT NULL constraint to the CREATE statement:
+
+```sql
+CREATE TABLE IF NOT EXISTS customer_transactions (
+    customer_id int NOT NULL, 
+    store_id int, 
+    spent numeric
+);
+```
+You can add NOT NULL constraints to more than one column. Usually this occurs when you have a COMPOSITE KEY, which will be discussed further below.
+
+Here is the syntax for it:
+```sql
+CREATE TABLE IF NOT EXISTS customer_transactions (
+    customer_id int NOT NULL, 
+    store_id int NOT NULL, 
+    spent numeric
+);
+```
+
+## UNIQUE
+The UNIQUE constraint is used to specify that the data across all the rows in one column are unique within the table. The UNIQUE constraint can also be used for multiple columns, so that the combination of the values across those columns will be unique within the table. In this latter case, the values within 1 column do not need to be unique.
+
+Let's look at an example
+```sql
+CREATE TABLE IF NOT EXISTS customer_transactions (
+    customer_id int NOT NULL UNIQUE, 
+    store_id int NOT NULL UNIQUE, 
+    spent numeric 
+);
+```
+Another way to write a UNIQUE constraint is to add a table constraint using commas to separate the columns.
+```sql
+CREATE TABLE IF NOT EXISTS customer_transactions (
+    customer_id int NOT NULL, 
+    store_id int NOT NULL, 
+    spent numeric,
+    UNIQUE (customer_id, store_id, spent)
+);
+```
+
+## PRIMARY KEY
+The PRIMARY KEY constraint is defined on a single column, and every table should contain a primary key. The values in this column uniquely identify the rows in the table. If a group of columns are defined as a primary key, they are called a composite key. That means the combination of values in these columns will uniquely identify the rows in the table. By default, the PRIMARY KEY constraint has the unique and not null constraint built into it.
+
+Let's look at the following example:
+```sql
+CREATE TABLE IF NOT EXISTS store (
+    store_id int PRIMARY KEY, 
+    store_location_city text,
+    store_location_state text
+);
+```
+Here is an example for a group of columns serving as composite key.
+```sql
+CREATE TABLE IF NOT EXISTS customer_transactions (
+    customer_id int, 
+    store_id int, 
+    spent numeric,
+    PRIMARY KEY (customer_id, store_id)
+);
+```
+
+More in the [PostgreSQL documentation](https://www.postgresql.org/docs/9.4/ddl-constraints.html)
+
+## UPSERT
+In RDBMS language, the term upsert refers to the idea of inserting a new row in an existing table, or updating the row if it already exists in the table. The action of updating or inserting has been described as "upsert".
+
+The way this is handled in PostgreSQL is by using the INSERT statement in combination with the ON CONFLICT clause.
+
+## INSERT
+The INSERT statement adds in new rows within the table. The values associated with specific target columns can be added in any order.
+
+Let's look at a simple example. We will use a customer address table as an example, which is defined with the following CREATE statement:
+```sql
+CREATE TABLE IF NOT EXISTS customer_address (
+    customer_id int PRIMARY KEY, 
+    customer_street varchar NOT NULL,
+    customer_city text NOT NULL,
+    customer_state text NOT NULL
+);
+```
+
+Let's try to insert data into it by adding a new row:
+
+```sql
+INSERT into customer_address (
+VALUES
+    (432, '758 Main Street', 'Chicago', 'IL'
+);
+```
+
+Now let's assume that the customer moved and we need to update the customer's address. However we do not want to add a new customer id. In other words, if there is any conflict on the customer_id, we do not want that to change.
+
+This would be a good candidate for using the ON CONFLICT DO NOTHING clause.
+
+```sql
+INSERT INTO customer_address (customer_id, customer_street, customer_city, customer_state)
+VALUES
+ (
+ 432, '923 Knox Street', 'Albany', 'NY'
+ ) 
+ON CONFLICT (customer_id) 
+DO NOTHING;
+```
+
+Now, let's imagine we want to add more details in the existing address for an existing customer. This would be a good candidate for using the ON CONFLICT DO UPDATE clause.
+
+```sql
+INSERT INTO customer_address (customer_id, customer_street)
+VALUES
+    (
+    432, '923 Knox Street, Suite 1' 
+) 
+ON CONFLICT (customer_id) 
+DO UPDATE
+    SET customer_street  = EXCLUDED.customer_street;
+```
+
+-----
+
+
+
+[fact_dimension]: ./images/facts_dimension_tables.png
