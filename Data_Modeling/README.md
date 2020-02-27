@@ -209,10 +209,10 @@ If you are familiar with Entity Relationship Diagrams (ERD), you will find the d
 - Star schema doen not allow for one to many relationships while snowflake schema does
 - Snowflake schema is more normalized than Star schema but only in 1NF or 2NF
 
-# Data Definitions and Constraints
+## Data Definitions and Constraints
 The CREATE statement in SQL has a few important constraints that are highlighted below
 
-## NOT NULL
+### NOT NULL
 The NOT NULL constraint indicates that the column cannot contain a null value.
 Here is the syntax for adding a NOT NULL constraint to the CREATE statement:
 
@@ -234,7 +234,7 @@ CREATE TABLE IF NOT EXISTS customer_transactions (
 );
 ```
 
-## UNIQUE
+### UNIQUE
 The UNIQUE constraint is used to specify that the data across all the rows in one column are unique within the table. The UNIQUE constraint can also be used for multiple columns, so that the combination of the values across those columns will be unique within the table. In this latter case, the values within 1 column do not need to be unique.
 
 Let's look at an example
@@ -255,7 +255,7 @@ CREATE TABLE IF NOT EXISTS customer_transactions (
 );
 ```
 
-## PRIMARY KEY
+### PRIMARY KEY
 The PRIMARY KEY constraint is defined on a single column, and every table should contain a primary key. The values in this column uniquely identify the rows in the table. If a group of columns are defined as a primary key, they are called a composite key. That means the combination of values in these columns will uniquely identify the rows in the table. By default, the PRIMARY KEY constraint has the unique and not null constraint built into it.
 
 Let's look at the following example:
@@ -278,12 +278,12 @@ CREATE TABLE IF NOT EXISTS customer_transactions (
 
 More in the [PostgreSQL documentation](https://www.postgresql.org/docs/9.4/ddl-constraints.html)
 
-## UPSERT
+### UPSERT
 In RDBMS language, the term upsert refers to the idea of inserting a new row in an existing table, or updating the row if it already exists in the table. The action of updating or inserting has been described as "upsert".
 
 The way this is handled in PostgreSQL is by using the INSERT statement in combination with the ON CONFLICT clause.
 
-## INSERT
+### INSERT
 The INSERT statement adds in new rows within the table. The values associated with specific target columns can be added in any order.
 
 Let's look at a simple example. We will use a customer address table as an example, which is defined with the following CREATE statement:
@@ -333,7 +333,84 @@ DO UPDATE
 ```
 
 -----
+# No Relational Databases (NOSQL)
+
+## When Not to Use SQL:
+- Need high Availability in the data: Indicates the system is always up and there is no downtime
+- Have Large Amounts of Data
+- Need Linear Scalability: The need to add more nodes to the system so performance will increase linearly
+- Low Latency: Shorter delay before the data is transferred once the instruction for the transfer has been received.
+- Need fast reads and write 
+
+[Example of NoSQL Databases](https://www.xenonstack.com/blog/nosql-databases/)
+
+## Distributed Databases
+In a distributed database (Scaled out horizontally in multiple machines), in order to have high availability (No downtime, but nodes fail), you will need copies of your data.
+
+### Eventual Consistency:
+Over time (if no new changes are made) each copy of the data will be the same, but if there are new changes, the data may be different in different locations. The data may be inconsistent for only **milliseconds**. There are workarounds in place to prevent getting stale data.
+
+### Commonly Asked Questions:
+**What does the network look like? Can you share any examples?**
+In Apache Cassandra every node is connected to every node -- it's peer to peer database architecture.
+
+**Is data deployment strategy an important element of data modeling in Apache Cassandra?**
+Deployment strategies are a great topic, but have very little to do with data modeling. Developing deployment strategies focuses on determining how many clusters to create or determining how many nodes are needed. These are topics generally covered under database architecture, database deployment and operations, which we will not cover in this lesson. Here is a useful link to learn more about it for [Apache Cassandra](https://docs.datastax.com/en/dse-planning/doc/).
+
+In general, the size of your data and your data model can affect your deployment strategies. You need to think about how to create a cluster, how many nodes should be in that cluster, how to do the actual installation. More information about deployment strategies can be found on this [DataStax documentation page](https://docs.datastax.com/en/dse-planning/doc/)
+
+## CAP Theorem
+Imposible for a distributed data store to have the next three guarantess simultaneously
+- **Consistency:** Every read from the database gets the latest (and correct) piece of data or an error
+
+- **Availability:** Every request is received and a response is given -- without a guarantee that the data is the latest update
+
+- **Partition Tolerance:** The system continues to work regardless of losing network connectivity between nodes
+
+### Commonly Asked Questions:
+**Is Eventual Consistency the opposite of what is promised by SQL database per the ACID principle?**
+Much has been written about how Consistency is interpreted in the ACID principle and the CAP theorem. Consistency in the ACID principle refers to the requirement that only transactions that abide by constraints and database rules are written into the database, otherwise the database keeps previous state. In other words, the data should be correct across all rows and tables. However, consistency in the CAP theorem refers to every read from the database getting the latest piece of data or an error.
+To learn more, you may find this discussion useful:
+[Discussion](https://www.voltdb.com/blog/2015/10/22/disambiguating-acid-cap/)
+
+**Which of these combinations is desirable for a production system - Consistency and Availability, Consistency and Partition Tolerance, or Availability and Partition Tolerance?**
+As the CAP Theorem Wikipedia entry says, "The CAP theorem implies that in the presence of a network partition, one has to choose between consistency and availability." So there is no such thing as Consistency and Availability in a distributed database since it must always tolerate network issues. You can only have Consistency and Partition Tolerance (CP) or Availability and Partition Tolerance (AP). Remember, relational and non-relational databases do different things, and that's why most companies have both types of database systems.
+
+**Does Cassandra meet just Availability and Partition Tolerance in the CAP theorem?**
+According to the CAP theorem, a database can actually only guarantee two out of the three in CAP. So supporting Availability and Partition Tolerance makes sense, since Availability and Partition Tolerance are the biggest requirements.
+
+**If Apache Cassandra is not built for consistency, won't the analytics pipeline break?**
+If I am trying to do analysis, such as determining a trend over time, e.g., how many friends does John have on Twitter, and if you have one less person counted because of "eventual consistency" (the data may not be up-to-date in all locations), that's OK. In theory, that can be an issue but only if you are not constantly updating. If the pipeline pulls data from one node and it has not been updated, then you won't get it. Remember, in Apache Cassandra it is about Eventual Consistency.
+
+## Denormalization
+Data Modeling in Apache Cassandra:
+- Denormalization is not just okay -- it's a must
+- Denormalization must be done for fast reads
+- Apache Cassandra has been optimized for fast writes
+- **ALWAYS** think Queries first
+- One table per query is a great strategy
+- Apache Cassandra does **not** allow for **JOINs** between tables
+
+### Commonly Asked Questions:
+**I see certain downsides of this approach, since in a production application, requirements change quickly and I may need to improve my queries later. Isn't that a downside of Apache Cassandra?**
+In Apache Cassandra, you want to model your data to your queries, and if your business need calls for quickly changing requirements, you need to create a new table to process the data. That is a requirement of Apache Cassandra. If your business needs calls for ad-hoc queries, these are not a strength of Apache Cassandra. However keep in mind that it is easy to create a new table that will fit your new query.
+
+## CQL (Cassandra Query Language)
+Similar to SQL. Doesn't support JOIN or GROUP BY.
+
+### Primary Key
+- Must be unique. If repeated it is overwritten
+- The PRIMARY KEY is made up of either just the PARTITION KEY or may also include additional CLUSTERING COLUMNS
+- A Simple PRIMARY KEY is just one column that is also the PARTITION KEY. A Composite PRIMARY KEY is made up of more than one column and will assist in creating a unique value and in your retrieval queries
+- The PARTITION KEY will determine the distribution of data across the system. Its how it is split across nodes with the hashing. 
+- Hashing of the primary key (partition key) results in placement on a particular node in the system.
+- Data is distriubuted by this primary key. (Try to pick a primary key that will split the data uniformly across the nodes)
+- Simple or Composite. Creates unique values composite. (Ex. YEAR - Artist Name, That is the primary key and is splitted according to both)
+- May have one or more clustering columns.
+More documentation about primary key [here](https://docs.datastax.com/en/cql/3.3/cql/cql_using/useSimplePrimaryKeyConcept.html#useSimplePrimaryKeyConcept)
 
 
+
+[//]: <> (Links and some external resources.)
 
 [fact_dimension]: ./images/facts_dimension_tables.png
