@@ -126,7 +126,7 @@ Ex:
 
 Agreggations and analytics -- OLAP queries
 
-Price or gather infromation -- OLTP queries
+Price or gather information -- OLTP queries
 
 ## Structuring Database
 ### Normalization
