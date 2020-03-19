@@ -79,15 +79,17 @@ Star schema might be the appropiate way joins with dimensions onluy. Good for OL
 - Loading
     - Insert into facts and dimension tables
 
+### DWH Architecture
 
-CREATE TABLE dimDate
-(
-    date_key integer NOT NULL PRIMARY KEY,
-    data date NOT NULL,
-    year smallint NOT NULL,
-    quarter smallint NOT NULL,
-    month smallint NOT NULL,
-    day smallint NOT NULL,
-    week smallint NOT NULL,
-    is_weekend smallint NOT NULL
-);
+#### Kimballs'Bus Architecture
+![alt text][kimball]
+
+
+
+
+
+
+
+
+[//]: <> (Links and some external resources.)
+[kimball]: ./Images/Kimballs_Architecture.png "Kimballs"
