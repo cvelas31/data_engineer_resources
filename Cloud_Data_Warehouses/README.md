@@ -84,6 +84,27 @@ Star schema might be the appropiate way joins with dimensions onluy. Good for OL
 #### Kimballs'Bus Architecture
 ![alt text][kimball]
 
+#### Independetn Data Marts
+![alt text][marts]
+Data Marts. Has Facts and Dimension focus on one department or business process.
+Independent ETL proccesses & dimensional models.
+Problems is that with different ETLs it may not be consistent across departments.
+
+#### Inmo's Corporate Information Factory (CIF)
+![alt text][cif]
+A big enterprise warehouse cleaned and organized.
+Then create Data Marts from it. But as the source is same it is consistent.
+There are 2 ETL process. Data Marts are mostly aggregated.
+
+#### Hybrid Kimball Bus & Inmon CIF
+![alt text][hybrid_cif]
+Combined Kimballs and CIF. Not Data Marts. It would be Dimensions.
+
+### OLAP CUBES
+Aggregation acroos one or more dimensions of the facts.
+
+Do grouping by Each Dimension using cubes in order to have almos all posible ways of searching, slicing, dicing, slicing, etc
+
 
 
 
@@ -93,3 +114,6 @@ Star schema might be the appropiate way joins with dimensions onluy. Good for OL
 
 [//]: <> (Links and some external resources.)
 [kimball]: ./Images/Kimballs_Architecture.png "Kimballs"
+[marts]: ./Images/Independent_data_marts_architecture.png "Marts"
+[cif]: ./Images/CIF.png "CIF"
+[hybrid_cif]: ./Images/Hybrid_cif.png "hybrid_cif"
