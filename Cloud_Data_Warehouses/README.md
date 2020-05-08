@@ -288,6 +288,47 @@ Sometimes in other languages is COPY TO instead of UNLOAD
 - aws sdk (Using python or programming languages)
 - Amazon Cloud Formation: using json os config files. Stack of things. If stack launches it worked. Atomicity 
 
+### Optimizing table design
+- When a table is partitioned up into many  pieces and distributed across slices in differnete machines, this is done blindly
+- If  one has  an idea about the frequent access pattern of  a table, one  can  choose a more clever strategy
+- The 2 possible strategies are:
+    - Distribution Style
+    - Sorting Key
+
+#### Distribution Style
+- **Even Distribution:**
+    - Round-robin over all slices to achieve load-balancing
+    - Good if a table won't be joined
+    - Split table into N chunks according to number of cpus
+    - When joining needs lot of shuffling (Like spark)
+- **All Distribution:**
+    - Small tables could be replicated on all slices to speed up joins
+    - Used frequently for Dimension tables
+    - AKA broadcasting
+    - Same table in all cpus
+- **Auto Distribution:**
+    - Leave decision to redshift
+    - "Small enough" tables are distributed with an ALL strategy
+    - Large  tables are distributed even strategy
+- **Key Distribution:**
+    - Rows having similar values (keys) are placed in the  same slice
+    - Not evenly  distributed (depends on keys)
+    - This can lead to skewed distribution according to frequency
+    - However, very useful when a dimension table is too big to be distributed with ALL strategy. In that case, we distribute both the fact  table and the dimension table using same dist key.
+    - If two tables are distributed on the joining keys, redshift collocates the rows from both tables on the  same slices.
+    - Useful when dimension table is too big.
+    - Reduces the  memory used when coopying.
+    - Need sintax  with `distkey`
+- **Sorting key:**
+    - One can define its columns as sort key
+    - Upon loading, rows  are sorted before distribution to slices.
+    - Minimizes the query time  since each nodde already has contiguos ranges of rows based on the sorting key
+    - Useful for columns that are used  frequently  in sorting like the date dimension and its corresponding foreign key in the fact table
+    - Need sintax  with `sortkey` (Can have both sort and dist keys)
+
+# Conslusion
+- The data   flow tools deserve  a little bit more focused attention
+- Table design, ETL, context, DWH on AWS, Redshift
 
 
 
