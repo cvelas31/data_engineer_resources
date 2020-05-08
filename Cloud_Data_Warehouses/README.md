@@ -138,6 +138,19 @@ OLAP cubes is a very convenient way for slicing, dicing and drilling down.
     - Always "catch-all" option is needed
 
 #### Amazon REDSHIFT
+## Implementing Data Warehouses on AWS
+- **Data Sources**
+Different types, skill sets, upgrades, locations, etc (High heterogeneity) (OLTP)
+- **ETL**
+Many process - a grid of machines with schedules and pipeline to copy data to DImensional Model
+- **Dimensional Model (DWH)**
+More resources need to be added as data increases. We have different workloads; some need one machine  and some many
+- **BI apps and visualizations**
+Hybrid environment
+
+## Redshift technology
+Cluster with Leader Node (Communication, optimizes queries), and compute nodes (Own cpu, memory and disk, divided into slices). A cluster with n slices, can process n partitions of tables simultaneoulsy.
+Each slice is al least 1 cpu with dedicated storage and memory for the slice.
 - Column oriented storage
 - Best suited for storing OLAP workloads, summin over a long history
 - Internally, it's a modified Postgresql
@@ -190,7 +203,7 @@ FROM table X, Y
 WHERE X.id=Y.fid x.v<>nul
 GROUP BY Y.d
 ```
-- If both servers are running the same RDBMS, that might be possible, but harder between two completely different RDBMSs.
+- If both servers are running the same RDBMS, that might be po  ssible, but harder between two completely different RDBMSs.
 - And even if we can, we probably need to do some transformations, cleaning governance, etc.
 - A general solution is putting an ETL server on the middle. An ETL server can:
     -  Talk to the source server and runs a SELECT query on the source DB server.
@@ -201,20 +214,20 @@ GROUP BY Y.d
 ## Redshift & ETL in Context
 ![alt text][etlcontext]
 - To transfer data from S3 staging area to redshift use the copy command
-- Inserting row by row is really slow
+- Inserting row by row is really really slow
 - If the file is large:
     - It is better to break it up to multiple files
     - Ingest in Parallel
-        - Either using a common prefix 
+        - Either using a common prefix
         - Or a minifest file
 - Other considerations
     - Better to ingest from the same AWS region (Same region for all)
-    - Better to compress the all the csv files
+    - Better to compress the all csv files
 - One can also specifiy the delimiter to be used
 
 **Prefix structure**
 ```sql
-COPY target_table FROM 's3://bucket_path/prefix{1 or 2 or 3 or ...}'
+COPY target_table FROM 's3://bucket_name/key_prefix'
 CREDENTIALS 'aws_iam_role=arn:aws:iam::45345452:role/dwhRole'
 gzip DELIMITER ';' REGION 'us-west-2';
 ```
@@ -222,10 +235,10 @@ gzip DELIMITER ';' REGION 'us-west-2';
 ```json
 {
     "entries": [
-        {"url":"s3://path/2013-10-04-custdata", "mandatory":true},
-        {"url":"s3://path/2013-10-05-custdata", "mandatory":true},
-        {"url":"s3://path/2013-10-06-custdata", "mandatory":true},
-        {"url":"s3://path/2013-10-07-custdata", "mandatory":true}
+        {"url":"s3://bucket_name/path/2013-10-04-custdata", "mandatory":true},
+        {"url":"s3://bucket_name/path/2013-10-05-custdata", "mandatory":true},
+        {"url":"s3://bucket_name/path/2013-10-06-custdata", "mandatory":true},
+        {"url":"s3://bucket_name/path/2013-10-07-custdata", "mandatory":true}
     ]
 }
 ```
@@ -235,8 +248,8 @@ IAM_ROLE 'arn:aws:iam::45345452:role/dwhRole'
 manifest;
 ```
 
-### Redshift ETL Automatic COmpression Optimization
-- The optimal compression strategy for each column type is different
+### Redshift ETL Automatic Compression Optimization
+- The optimal compression strategy for each column type is different, this is done in  the schema
 - redshift gives the user control over the compression of each column
 - The COPY command makes automatic best-effort compression decisons for each column
 
@@ -251,8 +264,30 @@ manifest;
     - Naturally used by BI apps
 - However, we may need to extract data out of Redshift to preaggregated OLAP Cubes
 ```
-UNLOAD ('select * from venue limit)
+UNLOAD ('select * from venue limit 10')
+to 's3://mybucket/venue_pipe_'
+iam_role 'arn:aws:iam::232083023283:role/MyRole
 ```
+There are write credentials
+Sometimes in other languages is COPY TO instead of UNLOAD
+
+## Building A Redshift Cluster
+- Look for Redshift
+- Quick launch
+- Type of machine used, select number of nodes
+- Fill info. and create cluster.
+- Go to query editor, tehre you can do the SQL statements or queries
+- We need to set up a Role (Who  is the  one accessing S3) and we need to open Port to have access from outside.
+- The cluster is only accesible from the VPC
+
+### Infrastructe as code (IaC)
+- Create infrastructure from code
+- Lets automate things
+- IaC is border line between dataEng/devOps
+- aws-cli: Like bash
+- aws sdk (Using python or programming languages)
+- Amazon Cloud Formation: using json os config files. Stack of things. If stack launches it worked. Atomicity 
+
 
 
 
