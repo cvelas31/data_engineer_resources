@@ -1,7 +1,6 @@
 # General
 *.cfg
 .DS_Store
-*.DS_Store
 
 # Data
 *data/
