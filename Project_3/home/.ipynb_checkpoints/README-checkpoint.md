@@ -45,17 +45,3 @@ python etl.py
 the other tables
 - Looking error inside the redshift cluster with the appropiate stl
 - Check timestamp loading on redshift
-
-## Additional Resources and Feedback
-### Regarding deststyle
-
-It's okay to use the diststyle all for small tables like users/artists especially if they are used in multiple joins with big partitioned tables. The use of song_id as a dist key for songplays table will cause issues, as some songs are played much more than the others leading to a skewed distribution. So using song_id as a distkey needs prior analysis of the distribution of records/song. A better way for distribution is to use the songplay_id, as it contains a unique value per record, which will mostly ensure good distribution of data without skew. You can also use the EVEN diststyle for songplays table to ensure equal distribution of data among the nodes
-
-### Others
-- [2X Your Redshift Speed With Sortkeys and Distkeys]
-- [Choosing Best Sort Key/ Dist Key - Official AWS Doc
-]
-
-[//]: <> (Links and some external resources.)
-[2X Your Redshift Speed With Sortkeys and Distkeys]: https://www.sisense.com/blog/double-your-redshift-performance-with-the-right-sortkeys-and-distkeys/
-[Choosing Best Sort Key/ Dist Key - Official AWS Doc]: https://docs.aws.amazon.com/redshift/latest/dg/c_best-practices-sort-key.html
