@@ -297,11 +297,13 @@ Sometimes in other languages is COPY TO instead of UNLOAD
 
 #### Distribution Style
 - **Even Distribution:**
+![alt text][disteven]
     - Round-robin over all slices to achieve load-balancing
     - Good if a table won't be joined
     - Split table into N chunks according to number of cpus
     - When joining needs lot of shuffling (Like spark)
 - **All Distribution:**
+![alt text][distall]
     - Small tables could be replicated on all slices to speed up joins
     - Used frequently for Dimension tables
     - AKA broadcasting
@@ -311,6 +313,7 @@ Sometimes in other languages is COPY TO instead of UNLOAD
     - "Small enough" tables are distributed with an ALL strategy
     - Large  tables are distributed even strategy
 - **Key Distribution:**
+![alt text][distkey]
     - Rows having similar values (keys) are placed in the  same slice
     - Not evenly  distributed (depends on keys)
     - This can lead to skewed distribution according to frequency
@@ -320,6 +323,7 @@ Sometimes in other languages is COPY TO instead of UNLOAD
     - Reduces the  memory used when coopying.
     - Need sintax  with `distkey`
 - **Sorting key:**
+![alt text][sortkey]
     - One can define its columns as sort key
     - Upon loading, rows  are sorted before distribution to slices.
     - Minimizes the query time  since each nodde already has contiguos ranges of rows based on the sorting key
@@ -341,3 +345,7 @@ Sometimes in other languages is COPY TO instead of UNLOAD
 [etl]: ./Images/ArchitectureETL.png "General Architecture"
 [awsetl]: ./Images/AWSETL.png "AWS ETL"
 [etlcontext]: ./Images/RedshiftETL.png "Redshift ETL"
+[disteven]: ./Images/disteven.png "EVEN Distribution"
+[distall]: ./Images/distall.png "ALL Distribution"
+[distkey]: ./Images/distkey.png "DISTKEY"
+[sortkey]: ./Images/sortkey.png "SORTKEY"
