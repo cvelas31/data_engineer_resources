@@ -82,6 +82,109 @@ Data streaming is a specialized topic in big data. The use case is when you want
 
 Spark has a streaming library called Spark Streaming although it is not as popular and fast as some other streaming libraries. Other popular streaming libraries include **Storm** and **Flink**. Streaming won't be covered in this course, but you can follow these links to learn more about these technologies.
 
+## SPARK
+### Spark Use Cases and Resources
+Here are a few resources about different Spark use cases:
+- Data Analytics (Spark SQL)
+- Machine Learning (Spark Mllib)
+- Streaming (Spark Streaming)
+- Graph Analytics (Spark GraphX)
+
+### You Don't Always Need Spark
+Spark is meant for big data sets that cannot fit on one computer. But you don't need Spark if you are working on smaller data sets. In the cases of data sets that can fit on your local computer, there are many other options out there you can use to manipulate data such as:
+
+- AWK - a command line tool for manipulating text files
+- R - a programming language and software environment for statistical computing
+- Python PyData Stack, which includes pandas, Matplotlib, NumPy, and scikit-learn among other libraries
+Sometimes, you can still use pandas on a single, local machine even if your data set is only a little bit larger than memory. Pandas can read data in chunks. Depending on your use case, you can filter the data and write out the relevant parts to disk.
+
+If the data is already stored in a relational database such as MySQL or Postgres, you can leverage SQL to extract, filter and aggregate the data. If you would like to leverage pandas and SQL simultaneously, you can use libraries such as SQLAlchemy, which provides an abstraction layer to manipulate SQL tables with generative Python expressions.
+
+The most commonly used Python Machine Learning library is scikit-learn. It has a wide range of algorithms for classification, regression, and clustering, as well as utilities for preprocessing data, fine tuning model parameters and testing their results. However, if you want to use more complex algorithms - like deep learning - you'll need to look further. TensorFlow and PyTorch are currently popular packages.
+
+### Spark's Limitations
+Spark has some limitation.
+
+Spark Streaming’s latency is at least 500 milliseconds since it operates on micro-batches of records, instead of processing one record at a time. Native streaming tools such as Storm, Apex, or Flink can push down this latency value and might be more suitable for low-latency applications. Flink and Apex can be used for batch computation as well, so if you're already using them for stream processing, there's no need to add Spark to your stack of technologies.
+
+Another limitation of Spark is its selection of machine learning algorithms. Currently, Spark only supports algorithms that scale linearly with the input data size. In general, deep learning is not available either, though there are many projects integrate Spark with Tensorflow and other deep learning tools.
+
+### Hadoop versus Spark
+The Hadoop ecosystem is a slightly older technology than the Spark ecosystem. In general, Hadoop MapReduce is slower than Spark because Hadoop writes data out to disk during intermediate steps. However, many big companies, such as Facebook and LinkedIn, started using Big Data early and built their infrastructure around the Hadoop ecosystem.
+
+While Spark is great for iterative algorithms, there is not much of a performance boost over Hadoop MapReduce when doing simple counting. Migrating legacy code to Spark, especially on hundreds of nodes that are already in production, might not be worth the cost for the small performance boost.
+
+### Beyond Spark for Storing and Processing Big Data
+Keep in mind that Spark is not a data storage system, and there are a number of tools besides Spark that can be used to process and analyze large datasets.
+
+Sometimes it makes sense to use the power and simplicity of SQL on big data. For these cases, a new class of databases, know as NoSQL and NewSQL, have been developed.
+
+For example, you might hear about newer database storage systems like HBase or Cassandra. There are also distributed SQL engines like Impala and Presto. Many of these technologies use query syntax that you are likely already familiar with based on your experiences with Python and SQL.
+
+In the lessons ahead, you will learn about Spark specifically, but know that many of the skills you already have with SQL, Python, and soon enough, Spark, will also be useful if you end up needing to learn any of these additional Big Data tools.
+
+## Data Wrangling with Spark
+
+### Functional Programming
+Perfect for distributed systems, spark uses it
+
+### DAG (Directed Acyclical Graph)
+Lazy evaluation and build the grpah of operations, kind of recipe.
+Multi steps combo are called stages.
+
+### Maps
+Maps simply make a copy of the input data, and transform that copy according to some function
+
+### Data Formats
+CSV, JSON, HTML, XML
+Difficulty dealing with HTML or XML is that elements cabn be nested, so while we process the files, we need to keep track of opening tags
+
+### Distributed data stores
+HDFS split files in 64Mb or 128Mb blocks across the cluster and replicates blocks across the cluster. Data Fault tolerant, and digesteble in chunks.
+
+AWS S3 to store and retrieve
+
+### Spark Session
+First the spark context is necessary. Connects cluster with the application.
+To create a spark context we need a saprk configuration. Its name and the masters IP Adress.
+
+To spark sql, use SparkSession builder  
+```python
+from pyspark.swl import SparkSession
+
+spark = SparkSession.builder.appName("Example").getOrCreate()
+
+spark.sparkContext.getConf().getAll() # See all the parameters
+```
+
+### Functions
+In the previous video, we've used a number of functions to manipulate our dataframe. Let's take a look at the different type of functions and their potential pitfalls.
+
+### General functions
+We have used the following general functions that are quite similar to methods of pandas dataframes:
+
+- select(): returns a new DataFrame with the selected columns
+- filter(): filters rows using the given condition
+- where(): is just an alias for filter()
+- groupBy(): groups the DataFrame using the specified columns, so we can run aggregation on them
+- sort(): returns a new DataFrame sorted by the specified column(s). By default the second parameter 'ascending' is True.
+- dropDuplicates(): returns a new DataFrame with unique rows based on all or just a subset of columns
+- withColumn(): returns a new DataFrame by adding a column or replacing the existing column that has the same name. The first parameter is the name of the new column, the second is an expression of how to compute it.
+### Aggregate functions
+Spark SQL provides built-in methods for the most common aggregations such as count(), countDistinct(), avg(), max(), min(), etc. in the pyspark.sql.functions module. These methods are not the same as the built-in methods in the Python Standard Library, where we can find min() for example as well, hence you need to be careful not to use them interchangeably.
+
+In many cases, there are multiple ways to express the same aggregations. For example, if we would like to compute one type of aggregate for one or more columns of the DataFrame we can just simply chain the aggregate method after a groupBy(). If we would like to use different functions on different columns, agg()comes in handy. For example agg({"salary": "avg", "age": "max"}) computes the average salary and maximum age.
+
+### User defined functions (UDF)
+In Spark SQL we can define our own functions with the udf method from the pyspark.sql.functions module. The default type of the returned variable for UDFs is string. If we would like to return an other type we need to explicitly do so by using the different types from the pyspark.sql.types module.
+
+### Window functions
+Window functions are a way of combining the values of ranges of rows in a DataFrame. When defining the window we can choose how to sort and group (with the partitionBy method) the rows and how wide of a window we'd like to use (described by rangeBetween or rowsBetween).
+
+For further information see the Spark SQL, DataFrames and Datasets Guide and the Spark Python API Docs.
+
+
+
 [//]: <> (Links and some external resources.)
 [Peter Norvig's original blog post]: http://norvig.com/21-days.html
 [interactive version]: http://people.eecs.berkeley.edu/~rcs/research/interactive_latency.html
