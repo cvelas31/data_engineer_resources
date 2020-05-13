@@ -170,6 +170,7 @@ We have used the following general functions that are quite similar to methods o
 - sort(): returns a new DataFrame sorted by the specified column(s). By default the second parameter 'ascending' is True.
 - dropDuplicates(): returns a new DataFrame with unique rows based on all or just a subset of columns
 - withColumn(): returns a new DataFrame by adding a column or replacing the existing column that has the same name. The first parameter is the name of the new column, the second is an expression of how to compute it.
+
 ### Aggregate functions
 Spark SQL provides built-in methods for the most common aggregations such as count(), countDistinct(), avg(), max(), min(), etc. in the pyspark.sql.functions module. These methods are not the same as the built-in methods in the Python Standard Library, where we can find min() for example as well, hence you need to be careful not to use them interchangeably.
 
@@ -183,10 +184,34 @@ Window functions are a way of combining the values of ranges of rows in a DataFr
 
 For further information see the Spark SQL, DataFrames and Datasets Guide and the Spark Python API Docs.
 
+## Spark SQL
+[Spark SQL built-in functions]
+- Creating views to use same SQL queries.
+- UDF needs to be registered, so it can look at it.
+
+**INSIDE SPARK WHEN USING IMPERATIVE AND SQL IT USES A QUERY OPTIMIZER ON THE INSIDE**
+
+## Debugging and optimization in Spark
+Spark provides 3 methods to mamage clusters
+- Standalone Mode
+- MESOS: Sharing cluster across team
+- YARN: Sharing cluster across team
+
+## Using AWS with Spark
+[Step by step]
+## EMR
+- Create  SSH Key Pair on EC2 screen
+- Go to EMR and Create cluster
+- Use cluster launch mode (lont term cluster). (Step execution turn down the cluster once the spark job finishes)
+- Select EMR-5.20.0, with Spark 2.4.0 YARN mode, Hadoop Ganglia and Zeppelin.
+- Select instances (Most common m5) Fifth generation comes with SSD
+
 
 
 [//]: <> (Links and some external resources.)
 [Peter Norvig's original blog post]: http://norvig.com/21-days.html
 [interactive version]: http://people.eecs.berkeley.edu/~rcs/research/interactive_latency.html
 [Here]: http://pandas.pydata.org/pandas-docs/stable/user_guide/io.html#io-chunking
+[Spark SQL built-in functions]: https://spark.apache.org/docs/latest/api/sql/index.html
+[Step by step]: http://insight-data-labs-sd.webflow.io/blog/spinning-up-an-apache-spark-cluster-step-by-step
 [numberstoknow]: ./Images/numberstoknow.png "Numbers to Know"
