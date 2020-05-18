@@ -199,6 +199,21 @@ Spark provides 3 methods to mamage clusters
 
 ## Using AWS with Spark
 [Step by step]
+
+# AWS CLI for EMR
+LOOK  AT  THE COURSE. THIS PART WAS ADDED
+
+**Why use AWS CLI?**
+AWS CLI enables you to run commands that allow access to currently available AWS Services. We can also use AWS CLI to primarily create and check the status of our EMR instances. Mostly during your work, you would normally create clusters that are similar in sizes and functionalities, and it can get tedious when you use the AWS console to create a cluster. If you have a pre-generated script to generate EMR saved to your text editor, you can re-run as often as you’d like to generate new clusters. This way we can bypass setting security groups and roles through AWS console. You can embed all these features, including selecting number of cores, applications to install, and even custom script to execute at the time of cluster launch by using a pre-generated script.
+
+**How to use AWS CLI?**
+We’ll be using AWS CLI to create an EMR cluster.
+Check to see if you have Python 3.6 or above
+You can check the Python version using the command line: $ python --version
+Install AWS CLI using pip install awscli.
+Check if AWS CLI is installed correctly by typing aws into your terminal.
+If you see the image below, you have installed AWS CLI correctly.
+
 ## EMR
 - Create  SSH Key Pair on EC2 screen
 - Go to EMR and Create cluster
@@ -206,7 +221,186 @@ Spark provides 3 methods to mamage clusters
 - Select EMR-5.20.0, with Spark 2.4.0 YARN mode, Hadoop Ganglia and Zeppelin.
 - Select instances (Most common m5) Fifth generation comes with SSD
 
+### Deployed on a script
+Logged into the Hadoop EMR, using ssh. (This may be done to the master node on the EC2 instance, with the Master public DNS on the summary of the cluster)
+Using ssh and getting into the cluster.
 
+Create the script (.py):
+- Need to import all the things (pyspark or things like that)
+- Create the session `spark = SparkSession.`
+- The saprk context is not accessible as sc at the beggining it has to be run as `spark.sparkContext.`
+- Explictly say to the spark session to stop `spark.stop()`
+
+To submit your code you do:
+- spark-submit
+- to find it use the linux tool: which spark-submit and shows the path
+- The you do: 
+```bash
+/usr/bin/spark-submit --master yarn {path-of-script}
+```
+- Recommended to write an output file to look at it.
+
+### Storing and retrieving data on the cloud
+#### S3 Buckets
+With the convenient AWS UI, we can easily mistake AWS S3 (Simple Storage Service) equivalent as Dropbox or even Google Drive. This is not the case for S3. S3 stores an object, and when you identify an object, you need to specify a bucket, and key to identify the object. For example 
+```
+df = spark.read.load(“s3://my_bucket/path/to/file/file.csv”)
+```
+From this code, s3://my_bucket is the bucket, and path/to/file/file.csv is the key for the object. Thankfully, if we’re using spark, and all the objects underneath the bucket have the same schema, you can do something like below.
+```
+df = spark.read.load(“s3://my_bucket/”)
+```
+This will generate a dataframe of all the objects underneath the my_bucket with the same schema. Pretend some structure in s3 like below:
+```
+my_bucket
+  |---test.csv
+  path/to/
+     |--test2.csv
+     file/
+       |--test3.csv
+       |--file.csv
+```
+If all the csv files underneath my_bucket, which are test.csv, test2.csv, test3.csv, and file.csv have the same schema, the dataframe will be generated without error, but if there are conflicts in schema between files, then the dataframe will not be generated. As an engineer, you need to be careful on how you organize your data lake.
+
+### Differences between HDFS and AWS S3
+Since Spark does not have its own distributed storage system, it leverages using HDFS or AWS S3, or any other distributed storage. Primarily in this course, we will be using AWS S3, but let’s review the advantages of using HDFS over AWS S3.
+
+Although it would make the most sense to use AWS S3 while using other AWS services, it’s important to note the differences between AWS S3 and HDFS.
+
+AWS S3 is an object storage system that stores the data using key value pairs, namely bucket and key, and HDFS is an actual distributed file system which guarantees fault tolerance. HDFS achieves fault tolerance by having duplicate factors, which means it will duplicate the same files at 3 different nodes across the cluster by default (it can be configured to different numbers of duplication).
+
+HDFS has usually been installed in on-premise systems, and traditionally have had engineers on-site to maintain and troubleshoot Hadoop Ecosystem, which cost more than having data on cloud. Due to the flexibility of location and reduced cost of maintenance, cloud solutions have been more popular. With extensive services you can use within AWS, S3 has been a more popular choice than HDFS.
+
+Since AWS S3 is a binary object store, it can store all kinds of format, even images and videos. HDFS will strictly require a certain file format - the popular choices are avro and parquet, which have relatively high compression rate and which makes it useful to store large dataset.
+
+#### Hadoop file system in EMR
+- Create directory
+`hdfs dfs -mkdir {path-directory}`
+- Copy from local
+hdfs dfs -copyFromLocal {file} {hdfs_directory}
+
+## Debugging and optimization
+Debugging in Spark is really hard!!!
+
+### Data Errors
+- Missing data and weird unicode chars
+- Print is not recommended, it sends the statement to each node, so each node has a copy of the print statement. Isntead use accumulators
+
+#### Accumulators
+As the name hints, accumulators are variables that accumulate. Because Spark runs in distributed mode, the workers are running in parallel, but asynchronously. For example, worker 1 will not be able to know how far worker 2 and worker 3 are done with their tasks. With the same analogy, the variables that are local to workers are not going to be shared to another worker unless you accumulate them. Accumulators are used for mostly sum operations, like in Hadoop MapReduce, but you can implement it to do otherwise.
+
+For additional deep-dive, here is the [Spark documentation on accumulators] if you want to learn more about these.
+
+```python
+incorrect_records = SparkContext.accumulator(0, 0)
+incorrect_records.value # 0
+
+def add_incorrect_record():
+    global incorrect_records
+    incorrect_records +=1
+
+from pyspark.sql.functions import udf
+correct_ts = udf(lambda x: 1 if x.isdigit() else add_incorrect_record())
+
+ddf = df.where(df["corrupt"].isNull().withColumn("ts_digit", correct_ts(df.ts)))
+
+# Needs to collect
+```
+Careful as they are not idempotent so can keep collecting
+
+#### Spark Broadcast
+Spark Broadcast variables are secured, read-only variables that get distributed and cached to worker nodes. This is helpful to Spark because when the driver sends packets of information to worker nodes, it sends the data and tasks attached together which could be a little heavier on the network side. Broadcast variables seek to reduce network overhead and to reduce communications. Spark Broadcast variables are used only with Spark Context.
+
+```python
+from pyspark import SparkContext
+
+sc = SparkContext('local[*]', 'pyspark')
+
+my_dict = {"item1": 1, "item2": 2, "item3": 3, "item4": 4} 
+my_list = ["item1", "item2", "item3", "item4"]
+
+my_dict_bc = sc.broadcast(my_dict)
+
+def my_func(letter):
+    return my_dict_bc.value[letter] 
+
+my_list_rdd = sc.parallelize(my_list)
+
+result = my_list_rdd.map(lambda x: my_func(x)).collect()
+
+print(result)
+```
+
+### Spark Web UI
+Is really good for diagnosis and monitoring the cluster
+Provides:
+- DAG, breaks in STages andd those Stages in Tasks.
+    - Tasks are the steps that the individual worker nodes are assignedd
+    - In each stage the worker noed divides up the input data and runs the task for that stage
+- Cluster conifguration
+
+The web UI only shows pages relatedd to current Spark jobs that are running
+
+#### How to connect to Spark Web UI
+- Port that uses Master noed to communicate with Slaves is 7077
+- Jupyter port 8888
+- Port 4040 shows active spark jobs.
+- Web UI on port 8080, shows astatus of cluster andd recent jobs
+- In local mode us e the docker host as the ip
+
+- **Environment**
+Different configuration parameters, version, name of application
+- **Executors**
+Gives information about executors, what resources, task ran succesfully
+- **Storage**
+Store cache rdds
+- **Jobs**
+As many actions regarding the code, an action can be take some records, saving, jobs are broken into stages, can be parallelized, then you can look the task, series of transformationrs ran in parallel
+- **Stages**
+Visualization of the DAG
+
+Using log files is hard. they are splitted across different nodes
+
+On executors  we will have std error and str out logs.
+We can set log leverl erros, as logging. For ex:
+`spark.sparkContext.setLogLevel("INFO") # "ERROR, etc`
+
+Further Optional Study on Log Data
+For further information please see the [Configuring Logging] section of the Spark documentation.
+
+### Code Optimization
+#### Dataset
+**Introduction to Dataset**
+
+In the real world, you’ll see a lot of cases where the data is skewed. Skewed data means due to non-optimal partitioning, the data is heavy on few partitions. This could be problematic. Imagine you’re processing this dataset, and the data is distributed through your cluster by partition. In this case, only a few partitions will continue to work, while the rest of the partitions do not work. If you were to run your cluster like this, you will get billed by the time of the data processing, which means you will get billed for the duration of the longest partitions working. This isn’t optimized, so we would like to re-distribute the data in a way so that all the partitions are working.
+- Data Skew: Distribution of data is not uniform, a worker gets a lot of info when reducing. Pareto principle (80% of data comes from 20% of users). Knowing your data, change way of partition or get more partitions.
+
+Let’s recap what we saw in the video
+In order to look at the skewness of the data:
+
+Check for MIN, MAX and data RANGES
+Examine how the workers are working
+Identify workers that are running longer and aim to optimize it.
+
+#### Optimizing skewness
+**Use Cases in Business Datasets**
+
+Skewed datasets are common. In fact, you are bound to encounter skewed data on a regular basis. In the video above, the instructor describes a year-long worth of retail business’ data. As one might expect, retail business is likely to surge during Thanksgiving and Christmas, while the rest of the year would be pretty flat. Skewed data indicators: If we were to look at that data, partitioned by month, we would have a large volume during November and December. We would like to process this dataset through Spark using different partitions, if possible. What are some ways to solve skewness?
+- Data preprocess
+- Broadcast joins
+- Salting
+
+**So how do we solve skewed data problems?**
+The goal is to change the partitioning columns to take out the data skewness (e.g., the year column is skewed).
+
+1. Use Alternate Columns that are more normally distributed:
+E.g., Instead of the year column, we can use Issue_Date column that isn’t skewed.
+
+2. Make Composite Keys:
+For e.g., you can make composite keys by combining two columns so that the new column can be used as a composite key. For e.g, combining the Issue_Date and State columns to make a new composite key titled Issue_Date + State. The new column will now include data from 2 columns, e.g., 2017-04-15-NY. This column can be used to partition the data, create more normally distributed datasets (e.g., distribution of parking violations on 2017-04-15 would now be more spread out across states, and this can now help address skewness in the data.
+
+3. Partition by number of Spark workers:
+Another easy way is using the Spark workers. If you know the number of your workers for Spark, then you can easily partition the data by the number of workers df.repartition(number_of_workers) to repartition your data evenly across your workers. For example, if you have 8 workers, then you should do df.repartition(8) before doing any operations.
 
 [//]: <> (Links and some external resources.)
 [Peter Norvig's original blog post]: http://norvig.com/21-days.html
@@ -214,4 +408,6 @@ Spark provides 3 methods to mamage clusters
 [Here]: http://pandas.pydata.org/pandas-docs/stable/user_guide/io.html#io-chunking
 [Spark SQL built-in functions]: https://spark.apache.org/docs/latest/api/sql/index.html
 [Step by step]: http://insight-data-labs-sd.webflow.io/blog/spinning-up-an-apache-spark-cluster-step-by-step
+[Spark documentation on accumulators]: https://spark.apache.org/docs/2.2.0/rdd-programming-guide.html#accumulators
+[Configuring Logging]: https://spark.apache.org/docs/latest/configuration.html
 [numberstoknow]: ./Images/numberstoknow.png "Numbers to Know"
