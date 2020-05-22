@@ -402,6 +402,110 @@ For e.g., you can make composite keys by combining two columns so that the new c
 3. Partition by number of Spark workers:
 Another easy way is using the Spark workers. If you know the number of your workers for Spark, then you can easily partition the data by the number of workers df.repartition(number_of_workers) to repartition your data evenly across your workers. For example, if you have 8 workers, then you should do df.repartition(8) before doing any operations.
 
+#### Optimizing skewness
+Let’s recap how I solved the skewed data problem.
+I would like to use two different ways to solve this problem.
+
+I would like to assign a new, temporary partition key before processing any huge shuffles.
+The second method is using repartition.
+
+### Troubleshooting Other Spark Issues
+In this lesson, we walked through various examples of Spark issues you can debug based on error messages, loglines and stack traces.
+
+We have also touched on another very common issue with Spark jobs that can be harder to address: everything working fine but just taking a very long time. So what do you do when your Spark job is (too) slow?
+
+#### Insufficient resources
+Often while there are some possible ways of improvement, processing large data sets just takes a lot longer time than smaller ones even without any big problem in the code or job tuning. Using more resources, either by increasing the number of executors or using more powerful machines, might just not be possible. When you have a slow job it’s useful to understand:
+
+How much data you’re actually processing (compressed file formats can be tricky to interpret) If you can decrease the amount of data to be processed by filtering or aggregating to lower cardinality, And if resource utilization is reasonable.
+
+There are many cases where different stages of a Spark job differ greatly in their resource needs: loading data is typically I/O heavy, some stages might require a lot of memory, others might need a lot of CPU. Understanding these differences might help to optimize the overall performance. Use the Spark UI and logs to collect information on these metrics.
+
+If you run into out of memory errors you might consider increasing the number of partitions. If the memory errors occur over time you can look into why the size of certain objects is increasing too much during the run and if the size can be contained. Also, look for ways of freeing up resources if garbage collection metrics are high.
+
+Certain algorithms (especially ML ones) use the driver to store data the workers share and update during the run. If you see memory issues on the driver check if the algorithm you’re using is pushing too much data there.
+
+####  Data skew
+If you drill down in the Spark UI to the task level you can see if certain partitions process significantly more data than others and if they are lagging behind. Such symptoms usually indicate a skewed data set. Consider implementing the techniques mentioned in this lesson:
+
+Add an intermediate data processing step with an alternative key Adjust the spark.sql.shuffle.partitions parameter if necessary
+
+The problem with data skew is that it’s very specific to a dataset. You might know ahead of time that certain customers or accounts are expected to generate a lot more activity but the solution for dealing with the skew might strongly depend on how the data looks like. If you need to implement a more general solution (for example for an automated pipeline) it’s recommended to take a more conservative approach (so assume that your data will be skewed) and then monitor how bad the skew really is.
+
+#### Inefficient queries
+Once your Spark application works it’s worth spending some time to analyze the query it runs. You can use the Spark UI to check the DAG and the jobs and stages it’s built of.
+
+Spark’s query optimizer is called Catalyst. While Catalyst is a powerful tool to turn Python code to an optimized query plan that can run on the JVM it has some limitations when optimizing your code. It will for example push filters in a particular stage as early as possible in the plan but won’t move a filter across stages. It’s your job to make sure that if early filtering is possible without compromising the business logic than you perform this filtering where it’s more appropriate.
+
+It also can’t decide for you how much data you’re shuffling across the cluster. Remember from the first lesson how expensive sending data through the network is. As much as possible try to avoid shuffling unnecessary data. In practice, this means that you need to perform joins and grouped aggregations as late as possible.
+
+When it comes to joins there is more than one strategy to choose from. If one of your data frames are small consider using broadcast hash join instead of a hash join.
+
+#### Further reading
+Debugging and tuning your Spark application can be a daunting task. There is an ever-growing community out there though, always sharing new ideas and working on improving Spark and its tooling, to make using it easier. So if you have a complicated issue don’t hesitate to reach out to others (via user mailing lists, forums, and Q&A sites).
+
+You can find more information on tuning [Spark Performance Tuning] and [Spark SQL Tuning] in the documentation.
+
+# Data Lakes
+## Why?
+**Is somethign wrong with data warehoouse?**
+R/ No, DWH is a mature field with lots of cumulative experience over the years, tried and true technologies. Dimensional modelling is still extremely relevant to this day.
+For many Organizations, a DWH is still the best way to go, perhaps, the biggest change would be going from an on-premise deployment to a clooud deployment.
+
+**Why data lake?**
+Recent years drove the evolution of DWH.
+- Unstructured data (text, cml, json, logs, sensor data, images, audio, video, etc)
+- Unprecedented data volumnes (IoT, social, machine-generated, sensors, etc)
+- The rise of big data technologies HDFS, Spark, etc.
+- New type of data anlysis, e.g predictive analysis, recommender systems, graph analytics, etc.
+- Emergence of new roles like the data scientist
+
+**Can we have unstructured data in DWH**
+- Might be possible in the ETL process. For instance, we might be able to distill some elements from json data and put it in tabular format
+- But later, we might decide that we want to transform it differently, so deciding on a particular form of transformation is a strong commitment without enough knowledge. E. g We start by recording # replies in a FB coomments and then we are interested in the frequency of angry words.
+- Some data is hard to put into tabular form like deep json structures
+- Some data like text,pdf documents could be stored as "blob" of data i a relational database but totally useless processed to extract metrics
+- The haddop file system (HDFS) made it possible to store petabytes of data on commodity hardware. Much lower cost per TB compared to MPP db.
+- Associated processing tools mapReduce, Pig, Hive, Impala and Spark to name a few, made it possible to process this data at scaler on the same hardware used for storage.
+- It is possible to make data analysis without inserting into a predefined schema. One can load a CSV file and make query without creating a table, inserting the data. Similarly one can process unstructured text data. This approach is knwon as "Schema-On-Read"
+
+**New Roles and Advance analytics**
+- The DWH by design follows a very weel-architected path to make clean, consistent and performant model that business users can easily use to gain insights and make decisions
+- As data became an asset of highest value (Data is the new oil), a role like the data scientist started to emerge seeking value from the data.
+- The DS job is almost impossible conforming to a single rigid representation of data. She need freedom too represent data, join data sets, retrieve new external data sources and more.
+- The type of analytics such as ML NLP need access the raw data in forms tottally different from a star schema.
+
+**THE DATA LAKE IS THE NEW DWH**
+- The data lake shares the goals of the DWH of supporting business insights beyond the day-today transactional data handling
+- The data lake is a new form  of a DWH that evolved to cope with:
+    - The variety of data formats and structuring
+    - The agile and ad-hoc nature of data exploration activities needed by new roles like the data scientis
+    - The wide spectrum data transformation need by advanced analytics like machine learning, graph analysis and recommender systems.
+
+## Big data Technologies on DWH
+### Low Cost -> ETL Offloading
+- Once big data technology started to gain industrial grounds, ETL offloading fro DWH was a clear choice
+- Same Hardware for storage and processing. No need for special ETL grid or additional storage for a staging area
+- Dimensionality modellling with conformed dimensions or data marts for high/known-value data
+- Moreover, low cost per TB gave room for storing low/unknown value data previously not available for analytics
+
+### Schema-on-Read
+- Traditionally, data in a database has been much easier to process than data in plain files
+- Big data tools in the Hadoop Ecosystem made it easy to work with a file as it is to work with dabase without:
+    - Creating database
+    - Inserting the data into the database
+- Schema on-read as for the schema of a table (simple a file on disk):
+    - It is either inferred
+    - Or specified and the data is not inserted into it, but upon read the data is checked against the specified schema
+
+#### Spark  Schema on read
+- We can have infered schema but may not be the best
+- Better to give the schema
+- You can drop the malformed, replace, or fail
+- Can query on the fly.
+- Can write SQL, and hablde data as SQL
+
+
 [//]: <> (Links and some external resources.)
 [Peter Norvig's original blog post]: http://norvig.com/21-days.html
 [interactive version]: http://people.eecs.berkeley.edu/~rcs/research/interactive_latency.html
@@ -410,4 +514,6 @@ Another easy way is using the Spark workers. If you know the number of your work
 [Step by step]: http://insight-data-labs-sd.webflow.io/blog/spinning-up-an-apache-spark-cluster-step-by-step
 [Spark documentation on accumulators]: https://spark.apache.org/docs/2.2.0/rdd-programming-guide.html#accumulators
 [Configuring Logging]: https://spark.apache.org/docs/latest/configuration.html
+[Spark Performance Tuning]: https://spark.apache.org/docs/latest/tuning.html
+[Spark SQL Tuning]: https://spark.apache.org/docs/latest/sql-performance-tuning.html
 [numberstoknow]: ./Images/numberstoknow.png "Numbers to Know"
