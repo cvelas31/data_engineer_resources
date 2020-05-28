@@ -505,6 +505,30 @@ Recent years drove the evolution of DWH.
 - Can query on the fly.
 - Can write SQL, and hablde data as SQL
 
+## Data Lakes concept
+- Storage and processing combo.
+- All types of data are welcome
+- You dont do ETL, you do ELT (Extract Load Transform). Data as is without transformation.
+- Recommend to use parquet
+![alt text][DWHvsdatalake]
+
+- Data Lake options:
+    - AWS EMR (HDFS + Spark)
+        - Ingest data from S3, AWS RDS, Dynamo DB, EC2, etc.
+        - EMR Big data cluster (lake Storage and processing)
+        - EMR is not supposed to shutdown.
+    - AWS EMR (S3 + Spark)
+        -  Ingest from sources (AWS RDS, EC2, S3, DynamoDB, etc)
+        - Ingest in S3
+        - Load data from S3 to EMR, Processs and save results on S3
+        - Analytics take the results in the S3
+        - NO HDFS, All data stored in S3
+        - On Demand costs
+    -  AWS Athena (Serverless)
+        - Similar storage in S3
+        - Use Lambda (Function as a service)
+        - Athena loads data and run computation on AWS Lambda
+        - pAy by execution time
 
 [//]: <> (Links and some external resources.)
 [Peter Norvig's original blog post]: http://norvig.com/21-days.html
@@ -517,3 +541,4 @@ Recent years drove the evolution of DWH.
 [Spark Performance Tuning]: https://spark.apache.org/docs/latest/tuning.html
 [Spark SQL Tuning]: https://spark.apache.org/docs/latest/sql-performance-tuning.html
 [numberstoknow]: ./Images/numberstoknow.png "Numbers to Know"
+[DWHvsdatalake]: ./Images/DWHvsdatalake.png "DWHvsdatalake"
