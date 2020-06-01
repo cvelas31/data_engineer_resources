@@ -530,6 +530,11 @@ Recent years drove the evolution of DWH.
         - Athena loads data and run computation on AWS Lambda
         - pAy by execution time
 
+### Issues
+- Is prone to being chaotic. A lot of garbage. Needs good management. Add metadata to all.
+- Everything is open, issue with data governance.
+- Should it work in parallel, replce DWh or what?
+
 [//]: <> (Links and some external resources.)
 [Peter Norvig's original blog post]: http://norvig.com/21-days.html
 [interactive version]: http://people.eecs.berkeley.edu/~rcs/research/interactive_latency.html
