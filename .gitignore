@@ -1,7 +1,9 @@
 # General
 *.cfg
 .DS_Store
+*.zip
 
 # Data
 *data/
 *event_data/
+./Project_4/home/data/
