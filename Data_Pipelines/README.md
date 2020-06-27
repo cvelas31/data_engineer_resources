@@ -297,7 +297,33 @@ Airflow has a rich and vibrant open source community. This community is constant
 
 Operators and hooks for common data tools like Apache Spark and Cassandra, as well as vendor specific integrations for Amazon Web Services, Azure, and Google Cloud Platform can be found in Airflow contrib. If the functionality exists and its not quite what you want, that’s a great opportunity to add that functionality through an open source contribution.
 
+### Task Boundaries
+DAG tasks should be designed such that they are:
+- Atomic and have a single purpose
+- Maximize parallelism
+- Make failure states obvious
 
+Every task in your dag should perform only one job.
+
+“Write programs that do one thing and do it well.” - Ken Thompson’s Unix Philosophy
+
+**Benefits of Task Boundaries**
+- Re-visitable: Task boundaries are useful for you if you revisit a pipeline you wrote after a 6 month absence. You'll have a much easier time understanding how it works and the lineage of the data if the boundaries between tasks are clear and well defined. This is true in the code itself, and within the Airflow UI.
+- Tasks that do just one thing are often more easily parallelized. This parallelization can offer a significant speedup in the execution of our DAGs.
+
+### SubDAGs
+Commonly repeated series of tasks within DAGs can be captured as reusable SubDAGs. Benefits include:
+
+Decrease the amount of code we need to write and maintain to create a new DAG
+Easier to understand the high level goals of a DAG
+Bug fixes, speedups, and other enhancements can be made more quickly and distributed to all DAGs that use that SubDAG
+
+**Drawbacks of Using SubDAGs**
+Limit the visibility within the Airflow UI
+Abstraction makes understanding what the DAG is doing more difficult
+Encourages premature optimization
+**Common Questions**
+Can Airflow nest subDAGs? - Yes, you can nest subDAGs. However, you should have a really good reason to do so because it makes it much harder to understand what's going on in the code. Generally, subDAGs are not necessary at all, let alone subDAGs within subDAGs.
 
 ### Execute Airflow Web UI
 To execute airflow  you must run `start.sh`.
