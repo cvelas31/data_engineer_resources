@@ -8,8 +8,8 @@ from helpers import SqlQueries
 import sql_statements
 
 # INPUTS
-AWS_KEY = "AKIAWA7DVV6T7XTCRP3O" #os.environ.get('AWS_KEY')
-AWS_SECRET = "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" #os.environ.get('AWS_SECRET')
+AWS_KEY = os.environ.get('AWS_KEY')
+AWS_SECRET = os.environ.get('AWS_SECRET')
 aws_credentials_id = "aws_credentials" # Name in connections
 redshift_conn_id = "redshift" # Name in connections
 s3_bucket = "udacity-dend"
