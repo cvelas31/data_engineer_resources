@@ -110,5 +110,5 @@ city_station_count_task =  PostgresOperator(
     """
 )
 
-load_and_analyze >> create_oldest_task
 create_oldest_task >> log_oldest_task
+create_youngest_task >> log_youngest_task

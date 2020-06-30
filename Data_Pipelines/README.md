@@ -325,6 +325,43 @@ Encourages premature optimization
 **Common Questions**
 Can Airflow nest subDAGs? - Yes, you can nest subDAGs. However, you should have a really good reason to do so because it makes it much harder to understand what's going on in the code. Generally, subDAGs are not necessary at all, let alone subDAGs within subDAGs.
 
+## Pipeline Monitoring
+Airflow can surface metrics and emails to help you stay on top of pipeline issues.
+
+### SLAs
+Airflow DAGs may optionally specify an SLA, or “Service Level Agreement”, which is defined as a time by which a DAG must complete. For time-sensitive applications these features are critical for developing trust amongst your pipeline customers and ensuring that data is delivered while it is still meaningful. Slipping SLAs can also be early indicators of performance problems, or a need to scale up the size of your Airflow cluster
+
+### Emails and Alerts
+Airflow can be configured to send emails on DAG and task state changes. These state changes may include successes, failures, or retries. Failure emails can allow you to easily trigger alerts. It is common for alerting systems like PagerDuty to accept emails as a source of alerts. If a mission-critical data pipeline fails, you will need to know as soon as possible to get online and get it fixed.
+
+### Metrics
+Airflow comes out of the box with the ability to send system metrics using a metrics aggregator called statsd. Statsd can be coupled with metrics visualization tools like [Grafana] to provide you and your team high level insights into the overall performance of your DAGs, jobs, and tasks. These systems can be integrated into your alerting system, such as pagerduty, so that you can ensure problems are dealt with immediately. These Airflow system-level metrics allow you and your team to stay ahead of issues before they even occur by watching long-term trends.
+
+## Other Pipeline Orchestrators
+Here are some resources to explore other data pipeline orchestrators.
+
+This [Github](https://github.com/pditommaso/awesome-pipeline) link contains perhaps way too many examples, but it shows a nice list of other pipeline orchestrators.
+
+You can also check out these pages to see how Airflow's components can be generalized to the elements of other pipeline orchestrators.
+- [Quora page](https://www.quora.com/Which-is-a-better-data-pipeline-scheduling-platform-Airflow-or-Luigi)
+- [Github link](https://xunnanxu.github.io/2018/04/13/Workflow-Processing-Engine-Overview-2018-Airflow-vs-Azkaban-vs-Conductor-vs-Oozie-vs-Amazon-Step-Functions/)
+- [Medium post](https://medium.com/@cyrusv/luigi-vs-airflow-vs-zope-wfmc-comparison-of-open-source-workflow-engines-de5209e6dac1)
+
+## What I like about Airflow?
+In short, Airflow addresses all the pain points I listed above about Luigi.
+- Airflow comes with an easy-to-use UI. You can easily see the task hierarchy, task logs, historical runs & statuses, what code is being run. Using this UI, you can also easily rerun historical tasks, change their states, mark tasks as complete, force tasks to run, etc. In the Luigi world, you’d have to do these things manually by deleting data outputted by the Luigi task.
+- Airflow comes with its own scheduler, Luigi requires the user to run “sink tasks” in a cron job, which are basically tasks to kick off the pipeline. This comes with the side benefit of separating our our Airflow tasks from crons and letting you easily scale Airflow in the future (potentially with Mesos). Also, Airflow supports multiple DAGs naively, whereas each DAG in Luigi requires a new cron job.
+- It is much easier to test Airflow pipelines than Luigi. You can run airflow test <dagId> <taskId> to run it in a real production setting.
+- Airflow separates output data & task state. Airflow keeps track of task state internally, so once a task is completed, the abstraction takes care of marking it as done, engineers don't need to do self.output().touch() to mark it as done.
+- Strong and active open source community. They contribute features like task SLAs, pager duty and slack integration, different type of data operators to access data from S3, Hive, etc. The gitter (chatroom) for airflow is very active, newbies like me can often get their questions answered within a few hours from Airflow contributors.
+
+## What I don’t like about Airflow?
+
+- Like any open source project, it has its share of bugs. We’ve had to apply a few patches to the latest stable release ourselves to deal with using RDS as metadata store and SQS as messaging broker. Even though both are technically supported. Compared to Luigi, Airflow has a lot more features, which unfortunately also means it has a much larger surface area for bugs. For example, Airflow’s support for “depends_on_past=True” tasks are abysmal and I would strongly recommend against using that whenever possible.
+- Relatedly, some available features are less well supported than others, like SubDAGOperators, changing start_date of existing DAGs, etc.
+- At a medium-sized company with lots of different tasks in pipelines, it’s unclear how to best organize these tasks into pipelines. Do all tasks that belong to the same team go into the same pipeline (also known as DAG in Airflow lingo)? Should you have large, deep, and complicated DAGs, or small, isolated DAGs connected by sensors? Should you use data sensors or ExternalTaskSensors? In the end, we decided to have team-based DAGs, but that inevitably leads of lots of ExternalTaskSensors, which takes up worker resources (because high priority ExternalTaskSensors in 1 DAG might get scheduled far before the task it depends on actually gets run).
+- The concepts of DagRun and TaskInstance can be confusing to people who only occasionally create Airflow tasks and don’t really understand how it works under the hood. For example, it’s easy for someone to think “I updated the task code for X, and I want to backfill this task for the last year so I’m going to clear the task state of X for the last year to let Airflow rerun them,” not knowing that this would mark the old DagRuns as active, and Airflow would try to schedule and execute unrelated tasks that weren’t in the “success” state from those older DagRuns.
+
 ### Execute Airflow Web UI
 To execute airflow  you must run `start.sh`.
 
@@ -332,12 +369,17 @@ To connect to Redshift use the Postgres connection
 
 Not good  to update the DAG. It is better to create a new DAG. To have properly the lineage and stteps of a DAG.
 
+# REDSHIFT
+awsuser
+Awsuser1
+
 [//]: <> (Links and some external resources.)
 [Quora]: https://www.quora.com/What-is-the-difference-between-the-ETL-and-ELT
 [airflow-diagram]: ./Images/airflow-diagram.png "airflow-diagram"
 [how-airflow-works]: ./Images/how-airflow-works.png "how-airflow-works"
 [context-variables]: https://airflow.apache.org/macros.html
 [blog]: https://blog.godatadriven.com/zen-of-python-and-apache-airflow
+[Grafana]: https://grafana.com/
 
 [Peter Norvig's original blog post]: http://norvig.com/21-days.html
 [interactive version]: http://people.eecs.berkeley.edu/~rcs/research/interactive_latency.html
