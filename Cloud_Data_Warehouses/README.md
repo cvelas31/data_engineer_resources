@@ -330,8 +330,8 @@ Sometimes in other languages is COPY TO instead of UNLOAD
     - Useful for columns that are used  frequently  in sorting like the date dimension and its corresponding foreign key in the fact table
     - Need sintax  with `sortkey` (Can have both sort and dist keys)
 
-# Conslusion
-- The data   flow tools deserve  a little bit more focused attention
+# Conclusion
+- The data  flow tools deserve  a little bit more focused attention
 - Table design, ETL, context, DWH on AWS, Redshift
 
 
