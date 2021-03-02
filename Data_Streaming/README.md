@@ -138,7 +138,229 @@ One of the key innovations over the past decade in computing has been the emerge
 - Kafka provides ordering guarantees for data stored within it, meaning that the order in which data is received is the order in which data will be produced to consumers
 - Commonly used data store for popular streaming tools like Apache Spark, Flink, and Samza
 
+### Kafka History
+- Created at Linkedin to service internal stream processing needs
+- Kafka is one of the Apache Foundation’s most popular projects
+- Used widely in production. Some famous users include Uber, Apple, and Airbnb
+- Creators of Kafka left LinkedIn to found Confluent, which now acts as the owner and leader of the Kafka project
+- Jay Kreps, one of the core authors of Apache Kafka, named the system after Czech author Franz Kafka. Kreps, who enjoys Kafka’s work, thought the name was a good fit because Kafka was built to be a “system optimized for writing.”
+
+### Kafka in Industry
+- The term source is sometimes used to refer to Kafka clients which are producing data into Kafka, typically in reference to another data store
+- The term sink is sometimes used to refer to Kafka clients which are extracting data from Kafka, typically in reference to another data store
+
+How Uber uses Kafka:
+- [The Uber Engineering Tech Stack Part 1](https://eng.uber.com/tech-stack-part-one/)
+- [The Uber Engineering Tech Stack Part 2](https://eng.uber.com/tech-stack-part-one/)
+
+# Kafka in Action
+
+## Kafka Topics
+- Used to organize and segment datasets, similar to SQL database tables
+- Unlike SQL database tables, Kafka Topics are not queryable.
+- May be created programmatically, from a CLI (Command Line Interface), or automatically
+- Consist of key-value data in binary format
+
+## Kafka Producers
+- Send event data into Kafka topics
+- Integrate with client libraries in languages like Java, Python, Go, as well as many other languages
+
+## Kafka Consumers
+- Pull event data from one or more Kafka Topics
+- Integrate with Kafka via a Client Library written in languages like Python, Java, Go, and more
+- By default only consume data that was produced after the consumer first connected to the topic. Historical data will not be consumed by default.
+
+# Kafka CLI
+
+## Commands:
+- `kafka-topics`: Create delete describe or change a topic
+  - `--create`: Create topic
+  - `--delete`: 
+  - `--describe`
+  - `--list`
+  - `--zookeeper`: **REQUIRED** Keeps configuration for the Kafka Cluster
+  - `--partitions`:
+  - `--replication-factor`:
+  - `--alter`: Alter the number of partition of a topic
+- `kafka-console-producer`: Connects to a data broker. Then you can send messages
+  - `broker-list`: **REQUIRED** The Broker list string Ex: localhost:9092 (URL of Kafka Broker different from zookeeper)
+  - `topic`: **REQUIRED** Topic id to produce messages to
+- `kafka-console-consumer`: Connects to a data broker. By default would only read messages produced after it was created.
+  - `topic`: **REQUIRED** Topic id to consume
+  - `--bootstrap-server`: **REQUIRED** The broker list string. Ex: localhost:9092 (URL of Kafka Broker different from zookeeper). Also could be: PLAINTEXT://localhost:9092
+  - `--from-beginning`: Would get all the messages from a topic
+
+## Kafka in Action - Summary
+- A Kafka Topic is how Kafka organizes and segments datasets
+- A Kafka Producer is an application that emits event data into a Kafka Topic
+- A Kafka Consumer is an application that pulls event data from one or more Kafka Topics
+- How to use the Kafka CLI Tools, such as ``kafka-topics``, ``kafka-console-producer``, and ``kafka-console-consumer``
+- How to use the ``confluent-kafka-python`` library to create a topic, producer, and consumer
+
+
+# Lesson 2 - Apache Kafka in depth
+
+## Glosary
+- **Broker (Kafka)** - A single member server of the Kafka cluster
+- **Cluster (Kafka)** - A group of one or more Kafka Brokers working together to satisfy Kafka production and consumption
+- **Node** - A single computing instance. May be physical, as in a server in a datacenter, or virtual, as an instance might be in AWS, GCP, or Azure.
+- **Zookeeper** - Used by Kafka Brokers to determine which broker is the leader of a given partition and topic, as well as track cluster membership and configuration for Kafka
+- **Access Control List (ACL)** - Permissions associated with an object. In Kafka, this typically refers to a user’s permissions with respect to production and consumption, and/or the topics themselves.
+- **JVM - The Java Virtual Machine** - Responsible for allowing host computers to execute the byte-code compiled against the JVM.
+- **Data Partition (Kafka)** - Kafka topics consist of one or more partitions. A partition is a log which provides ordering guarantees for all of the data contained within it. Partitions are chosen by hashing key values.
+- **Data Replication (Kafka)** - A mechanism by which data is written to more than one broker to ensure that if a single broker is lost, a replicated copy of the data is available.
+- **In-Sync Replica (ISR)** - A broker which is up to date with the leader for a particular broker for all of the messages in the current topic. This number may be less than the replication factor for a topic.
+- **Rebalance** - A process in which the current set of consumers changes (addition or removal of consumer). When this occurs, assignment of partitions to the various consumers in a consumer group must be changed.
+- **Data Expiration** - A process in which data is removed from a Topic log, determined by data retention policies.
+- **Data Retention** - Policies that determine how long data should be kept. Configured by time or size.
+- **Batch Size** - The number of messages that are sent or received from Kafka
+acks - The number of broker acknowledgements that must be received from Kafka before a producer continues processing
+- **Synchronous Production** - Producers which send a message and wait for a response before performing additional processing
+- **Asynchronous Production** - Producers which send a message and do not wait for a response before performing additional processing
+- **Avro** - A binary message serialization format
+- **Message Serialization** - The process of transforming an applications internal data representation to a format suitable for interprocess communication over a protocol like TCP or HTTP.
+- **Message Deserialization** - The process of transforming an incoming set of data from a form suitable for interprocess communication, into a data representation more suitable for the application receiving the data.
+- **Retries (Kafka Producer)** - The number of times the underlying library will attempt to deliver data before moving on
+- **Consumer Offset** - A value indicating the last seen and processed message of a given consumer, by ID.
+- **Consumer Group** - A collection of one or more consumers, identified by group.id which collaborate to consume data from Kafka and share a consumer offset.
+- **Consumer Group Coordinator** - The broker in charge of working with the Consumer Group Leader to initiate a rebalance
+- **Consumer Group Leader** - The consumer in charge of working with the Group Coordinator to manage the consumer group
+- **Topic Subscription** - Kafka consumers indicate to the Kafka Cluster that they would like to consume from one or more topics by specifying one or more topics that they wish to subscribe to.
+- **Consumer Lag** - The difference between the offset of a consumer group and the latest message offset in Kafka itself
+- **CCPA** - California Consumer Privacy Act
+- **GDPR** - General Data Protection Regulation
+
+## Kafka Architecture
+- Kafka servers are referred to as brokers
+- All of the brokers that work together are referred to as a cluster
+- Clusters may consist of just one broker, or thousands of brokers
+- Apache Zookeeper is used by Kafka brokers to determine which broker is the leader of a given partition and topic
+- Zookeeper keeps track of which brokers are part of the Kafka cluster
+- Zookeeper stores configuration for topics and permissions (Access Control Lists - ACLs)
+- ACLs are Permissions associated with an object. In Kafka, this typically refers to a user’s permissions with respect to production and consumption, and/or the topics themselves.
+- Kafka nodes may gracefully join and leave the cluster
+- Kafka runs on the Java Virtual Machine (JVM)
+
+## Kafka Clustering
+- Kafka servers are referred to as brokers and organized into clusters.
+- Kafka uses Apache Zookeeper to keep track of topic and ACL(Permission) configuration, as well as determine leadership and cluster management.
+- Usage of ZooKeeper means that Kafka brokers can typically seamlessly join and leave clusters, allowing Kafka to grow easily as its usage increases or decreases.
+- Kafka stores data according to the topic as multiple text log files
+- Kafka partitions (Higlighted are leaders of a partition) it has some replications
+![kafka-partitions]
+**Partitions Takeaways**
+- Partitions are unit of parallelism
+- Consumers may parallelize data from each partition
+- Producers may paralelize data from each partition
+- Partition assignment is done by hashing to distribute them evenly
+- Reduces bottlenecks by involving multiple brokers
+
+### Data Replication
+- Data written in many brokers
+- Partition leaders are the ones who handles petitions or requests, when a leader fails another broker is selected to be the leader
+- Can't have more replicas than you have brokers
+- Data replication incurs overhead
+- Always enable replication if you can in a Production Cluster
+
+### How Kafka Works - Summary
+- A Kafka Broker is an individual Kafka server
+- A Kafka Cluster is a group of Kafka Brokers
+- Kafka uses Zookeeper to elect topic leaders and store its own configuration
+- Kafka writes log files to disk on the Kafka brokers themselves
+- How Kafka achieves scale and parallelism with topic partitions
+- How Kafka provides resiliency and helps prevent data loss with data replication
+
+## Kafka Topic in Depth
+Kafka Topics are rich in configuration options. To get the most out of Kafka you will need to develop a strong understanding of how these options impact performance. This will include understanding how to replicate topics in Kafka.
+
+### Topic configuration
+- Data replication can be set on a per-topic basis
+- A broker must be an "In Sync Replica" (ISR) to become leader
+- Desired number of ISRs can be set on topics
+
+### Partitioning Topics Tips and Equation
+- The “right” number of partitions is highly dependent on the scenario.
+- The most important number to understand is desired throughput. How many MB/s do you need to achieve to hit your goal?
+- You can easily add partitions at a later date by modifying a topic.
+- Partitions have performance consequences. They require additional networking latency and potential rebalances, leading to unavailability.
+- Determine the number of partitions you need by dividing the overall throughput you want by the throughput per single consumer partition or the throughput per single producer partition. Pick the larger of these two numbers to determine the needed number of partitions.
+  - ``# Partitions = Max(Overall Throughput/Producer Throughput, Overall Throughput/Consumer Throughput)``
+  - Example from video, with 3 Producers and 5 Consumers, each operating at 10MB/s per single producer/consumer partition: Max(100MBs/(3 * 10MB/s), 100MBs/(5 * 10MB/s)) = Max(2) ~= *4 partitions needed*
+- [Considerations in choosing the number of partitions](https://www.confluent.io/blog/how-choose-number-topics-partitions-kafka-cluster)
+![topic_ordering]
+
+### Naming Conventions
+- No official or idiomatic pattern defined
+- Kafka requires names <256 chars, [a-zA-Z0-9.-_]
+- Name topics according to some consistent strategy
+- Consistent naming leads to simpler consumption
+- Naming conventions can help reduce confusion, save time, and even increase reusability.
+- Recommendation:
+<domain>.<model>.<event_type>
+Ex: com.udacity.data_stream.lesson2.quiz.result
+The important thing is to be consistent across all topics
+
+### Data Management
+- Data retention determines how long Kafka stores data in a topic.
+  - [The retention.bytes, retention.ms settings control retention policy](https://kafka.apache.org/documentation.html#topicconfigs)
+- When data expires it is deleted from the topic.
+  - [This is true if cleanup.policy is set to delete](https://kafka.apache.org/documentation.html#topicconfigs)
+- Retention policies may be time based. Once data reaches a certain age it is deleted.
+  - [The retention.ms setting controls retention policy on time](https://kafka.apache.org/documentation.html#topicconfigs)
+- Retention policies may be size based. Once a topic reaches a certain age the oldest data is deleted.
+  - [The retention.bytes setting controls retention policy on time](https://kafka.apache.org/documentation.html#topicconfigs)
+- Retention policies may be both time- and size-based. Once either condition is reached, the oldest data is deleted.
+- Alternatively, topics can be compacted in which there is no size or time limit for data in the topic.
+  - [This is true if cleanup.policy is set to compact](https://kafka.apache.org/documentation.html#topicconfigs)
+- Compacted topics use the message key to identify messages uniquely. If a duplicate key is found, the latest value for that key is kept, and the old message is deleted.
+- Kafka topics can use compression algorithms to store data. This can reduce network overhead and save space on brokers. Supported compression algorithms include: lz4, ztsd, snappy, and gzip.
+  - [compression.type controls the type of message compression for a topic](https://kafka.apache.org/documentation.html#topicconfigs)
+- Kafka topics should store data for **ONE type of event**, not multiple types of events. Keeping multiple event types in one topic will cause your topic to be hard to use for downstream consumers.
+
+### Topic Creation
+- **DO NOT CREATE AUTOMATIC TOPICS**
+- Create them manually with the things as needed
+- Write code to check if the desired topic exists
+- Use bash scripts o terraform to create your topics.
+#### Example:
+```python
+config={
+  "cleanup.policy": "compact", # What to do with old logs. Delete old topics. Other option is compact
+  "compression.type": "lz4", # Compression type for topics
+  "delete.retention.ms": 100, # Marked for deletion how mucho to wait to delete
+  "file.delete.delay.ms": 100, # Time to wait for delteing file in filesystem
+  ...
+}
+```
+
+
+# Kinesis
+AWS Streaming. Based on **shards**.
+Has producer and consumers.
+A shard is the throughput unit, a single shard can handle 1Mb/sec or 1000 requests per second.
+
+## Recommendations:
+- Shard can be dynamically. You can add more sahrds easily, but you cannot reduce them easily.
+- Uses partition keys (Always have more partition keys than shards) to send the data.
+- Sends data accordning to the partition key.
+- Make sure it is evenly distributed, will help.
+
+### Producers
+You can produce with the aws API with put_records or put_record.
+
+### Consumers
+Kinesis library
+Event based using Lambda, may be useful to process it and sent it to another service with lambda.
+
+
+
+### Optional Further Research in Kafka Topics
+- [Kafka topic settings documentation](https://kafka.apache.org/documentation.html#topicconfigs)
+- [Confluent blog post on Partitioning](https://www.confluent.io/blog/how-choose-number-topics-partitions-kafka-cluster)
+
+
+  
 [//]: <> (Links and some external resources.)
 [Quora]: https://www.quora.com/What-is-the-difference-between-the-ETL-and-ELT
-[airflow-diagram]: ./Images/airflow-diagram.png "airflow-diagram"
-[how-airflow-works]: ./Images/how-airflow-works.png "how-airflow-works"
+[kafka-partitions]: ./Images/Kafka_partitions.png "airflow-diagram"
+[topic_ordering]: ./Images/topic_ordering.png "how-airflow-works"
