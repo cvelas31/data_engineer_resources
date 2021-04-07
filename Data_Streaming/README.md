@@ -1,5 +1,10 @@
 # Data Streaming Udacity
 
+## Timely decisions
+- Data loses value quickly over time
+- Real time analysis are way more productive
+![time_value_data]
+
 ## Understanding Stream Processing
 In computing, a stream is typically thought of as a potentially unbounded sequence.
 
@@ -200,7 +205,7 @@ How Uber uses Kafka:
 
 # Lesson 2 - Apache Kafka in depth
 
-## Glosary
+## Glossary
 - **Broker (Kafka)** - A single member server of the Kafka cluster
 - **Cluster (Kafka)** - A group of one or more Kafka Brokers working together to satisfy Kafka production and consumption
 - **Node** - A single computing instance. May be physical, as in a server in a datacenter, or virtual, as an instance might be in AWS, GCP, or Azure.
@@ -214,7 +219,7 @@ How Uber uses Kafka:
 - **Data Expiration** - A process in which data is removed from a Topic log, determined by data retention policies.
 - **Data Retention** - Policies that determine how long data should be kept. Configured by time or size.
 - **Batch Size** - The number of messages that are sent or received from Kafka
-acks - The number of broker acknowledgements that must be received from Kafka before a producer continues processing
+- **acks** - The number of broker acknowledgements that must be received from Kafka before a producer continues processing
 - **Synchronous Production** - Producers which send a message and wait for a response before performing additional processing
 - **Asynchronous Production** - Producers which send a message and do not wait for a response before performing additional processing
 - **Avro** - A binary message serialization format
@@ -332,8 +337,250 @@ config={
   ...
 }
 ```
+### Optional Further Research in Kafka Topics
+- [Kafka topic settings documentation](https://kafka.apache.org/documentation.html#topicconfigs)
+- [Confluent blog post on Partitioning](https://www.confluent.io/blog/how-choose-number-topics-partitions-kafka-cluster)
+
+### Kafka Producers
+- Synchronously and asynchronously send data to Kafka
+- Use key configuration options, such as batch size, client identifiers, compression, and acknowledgements
+- Specify data serializers
+
+#### Synchronous Producer
+- Blocks producer program until the broker has confirmed receipt
+- Make sure data was succefully delivered
+- Not common usage
+
+#### Asynchronous Producer
+- Maximizes throughput
+- Most common usage
+- Use callbacks to know when an error occured
+
+#### Message Serialization
+- Data sent to Kafka should be serialized into a format
+- Kafka client can assist serialization
+- Formats include binary, string, csv, json, avro.
+- **Never change serialization type without a new topic**
+
+#### Producer Summary Configuration
+- All available settings for the `confluent_kafka_python` library can be found in the [librdkafka](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md) configuration options. `confluent_kafka_python` uses `librdkafka` under the hood and shares the exact configuration options in this document.
+- It is a good idea to always set the `client.id` for improved logging, debugging, and resource limiting
+- The `retries` setting determines how many times the producer will attempt to send a message before marking it as failed
+- If ordering guarantees are important to your application and you’ve also enabled retries, make sure that you set `enable.idempotence` to true
+- Producers may choose to compress messages with the ``compression.type`` setting
+Options are none, `gzip`, `lz4`, `snappy`, and `zstd`
+Compression is performed by the producer client if enabled
+- If the topic has its own compression setting, it must match the producer setting, otherwise the broker will decompress and recompress the message into its configured format.
+- The `acks` setting determines how many In-Sync Replica (ISR) Brokers need to have successfully received the message from the client before moving on
+- A setting of `-1` or `all` means that all ISRs will have successfully received the message before the producer proceeds
+- Clients may opt to set this to 0 for performance reasons
+- The diagram below illustrates how the topic and producer may have different compression settings. However, the setting at the topic level will always be what the consumer sees. ![diagram_compression]
+
+#### Batching Configuration
+- A producer doesn't send all data inmediately, batches all data generated according to some conditions.
+- Messages may be batched on one or more of: time, count or size
+- Kafka clients allow configuration of these batch settings
+- Batch settings can be critical for producer performance
+
+**Set configuration carefully on the producer, particullarly on the buffer side**
+
+#### Kafka Producers - Summary
+Kafka Producers are rich in options and configuration. In this section you’ve seen how to adapt your producer code to a wide-variety of real world situations through configuration.
+
+Remember, no one set of settings works in all scenarios. If your producer application isn’t performing the way you expect, it’s worth revisiting your producer configuration to ensure that the settings make sense for the throughput level you are hoping to achieve.
+
+#### Optional Further Reading on Kafka Producers
+- `confluent-kafka-python`/`librdkafka` [Configuration Options](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md)
+- [Apache Documentation on Producer Configuration](https://kafka.apache.org/documentation/#producerconfigs)
+- `confluent-kafka-python` [Producer class](https://docs.confluent.io/current/clients/confluent-kafka-python/index.html?highlight=serializer#producer)
+
+### Kafka Consumers
+
+**Key Points**
+- `client.id` is an optional setting which is useful in debugging and resource limiting
+- Poll for data to read data from Kafka
+  - poll
+  - consume
+- Consumrs subscribe to one or more topics
+- Subscribing to a topic that does not exists will create it with default settings (Not recommended)
+
+#### Consumer Offsets - Key Points
+- Kafka keeps track of what data a consumer has seen with offsets
+  - Kafka stores offsets in a private internal topic
+  - Most client libraries automatically send offsets to Kafka for you on a periodic basis
+  - You may opt to commit offsets yourself, but it is not recommended unless there is a specific use-case.
+  - Offsets may be sent synchronously or asynchronously (Recommended asynchronously)
+  - Committed offsets determine where the consumer will start up
+    - If you want the consumer to start from the first known message, [set auto.offset.reset to earliest]
+    - This will only work the first time you start your consumer. On subsequent restarts it will pick up wherever it left off
+    - If you always want your consumer to start from the earliest known message, you must manually assign your consumer to the start of the topic on boot
+
+#### Example:
+- `auto.offset.reset`: How to connect to the topic, pick where it left or all messages, only works the first time a consumrs connects to a topic. You pick up were it left.
+- `on_assign` Callback on suscribe cna change offset assignment on partitions
+
+#### Consumer Groups
+A group id parameters must be set on consumers
+- Consumer groups are clients consuming from the same topic
+- A consumer of a consumer group can only see specific partitions
+- **REBALANCE IS EXPENSIVE** The consumers enter to a halt/sleep state where they do not consume. Avoid unnecessary rebalancing.
+- All Kafka Consumers belong to a Consumer group
+- The group.id [parameter](https://docs.confluent.io/current/installation/configuration/consumer-configs.html#) is required and identifies the globally unique consumer group
+- Consumer groups consist of one or more consumers
+- Consumer groups increase throughput and processing speed by allowing many consumers of topic data. However, only one consumer in the consumer group receives any given message.
+- If your application needs to inspect every message in a topic, create a consumer group with a single member
+- Adding or removing consumers causes Kafka to rebalance
+  - During a rebalance, a broker group coordinator identifies a consumer group leader
+  - The consumer group leader reassigns partitions to the current consumer group members
+  - During a rebalance, messages may not be processed or consumed
+
+#### Consumer Subscriptions
+- You subscribe to a topic by specifying its name
+  - If you wanted to subscribe to com.udacity.lesson.views, you would simply specify the full name as ”com.udacity.lesson.views”
+  - Make sure to set allow.auto.create.topics to false so that the topic isn’t created by the consumer if it does not yet exist
+- One consumer can subscribe to multiple topics by using a regular expression
+  - The format for the regular expression is slightly different. If you wanted to subscribe to com.udacity.lesson.views.lesson1 and com.udacity.lesson.views.lesson2 you would specify the topic name as ”^com.udacity.lesson.views.*”
+  - The topic name must be prefixed with ”^” for the client to recognize that it is a regular expression, and not a specific topic name
+  - Use regexp to specify your regular expressions.
+  - See the [confluent_kafka_python `subscribe()`](https://docs.confluent.io/current/clients/confluent-kafka-python/index.html?highlight=serializer#confluent_kafka.Consumer.subscribe) documentation for more information
+
+#### Deserializers
+- Remember to deserialize the data you are receiving from Kafka in an appropriate format
+  - If the producer used JSON, you will need to deserialize the data using a JSON library
+  - If the producer used bytes or string data, you may not have to do anything
+- Consumer groups increase fault tolerance and resiliency by automatically redistributing partition assignments if one or more members of the consumer group fail.
+
+#### Retrieving Data From Kafka
+The consumer poll loop fetches data from Kafka
+- Most Kafka Consumers will have a “poll” loop which loops infinitely and ingests data from Kafka
+- Here is a sample poll loop:
+```python
+while True:
+  message = consumer.poll(timeout=1.0)
+  # messages = consumer.consume(5, timeout=1.0) # 5 messages at a time returns batch of messages
+  if message is None:
+    print("no message received by consumer")
+  elif message.error() is not None:
+    print(f"error from consumer {message.error()}")
+    # Log error
+    continue
+  else:
+    print(f"consumed message {message.key()}: {message.value()}")
+```
+- It is possible to use either poll or consume, but poll is slightly more feature rich
+- Make sure to call close() on your consumer before exiting and to consume any remaining messages
+- Failure to call close means the Kafka Broker has to recognize that the consumer has left the consumer group, which takes time and failed messages. Try to avoid this if you can. This will cause a rebalance
+
+#### Optional Further Research
+- [Consumer Configuration Options](https://kafka.apache.org/documentation/#consumerconfigs)
+- `confluent_kafka_python` [Options](https://docs.confluent.io/current/clients/confluent-kafka-python/index.html?highlight=serializer#consumer)
+- `librdkafka` [consumer options shared with `confluent_kafka_python`](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md)
+
+## Performance
+
+### Metrics for consumer performance
+
+#### Consumer
+- **Consumer lag** measures how far behind consumer is: `Lag = Latest Topic Offset - Consumer Topic Offset`
+  - Validate that the lag does not grow over time, consumer cant keep up
+  - Will need aditional consumer processes
+- Messages per second indicates throughput
+- Kafka Java Metrics Explorer provides real-time metrics
+
+#### Producer
+- Measure latency to understand performance: `latency = time broker received - time produced`
+  - Must be constant
+  - Must be small
+- High latency may indicate that your `acks` setting is too high and that too many `ISR` nodes must confirm message before returning
+- High latency may indicate too many replicas
+- **Producer response rate** tracks overall delivery rate (Messages delivered over time). Measure this number using producer delivery callbacks
+
+#### Broker
+- Track disc usage, high disk usage cause outages. It stores lots of data.
+  - May cause data loss and high downtimes if not enough space
+- Network usage may slow consume/produce
+  - Avoid always network saturation
+- Elections frequency. Should be infrequent
+  - When Leadership elections occurs, it stops all consumers and producers. It is very disruptive
+  - Frequent elections indicates broker instability (Cluster issues)
+
+#### Summary
+Monitoring Kafka Consumers, Producers, and Brokers for performance is an important part of using Kafka. There are many metrics by which to measure your Kafka cluster. Focus on these key metrics to get started:
+
+- Consumer Lag: The difference between the latest offset in the topic and the most recently committed consumer offset
+- Producer Response Rate: The rate at which the broker is responding to the producer indicating message status
+- Producer Request Latency: The length of time a producer has to wait for a response from the broker after sending a message
+- Broker Disk Space
+- Broker Elections
+
+### Further Research
+- [DataDog blog post on monitoring Kafka](https://www.datadoghq.com/blog/monitoring-kafka-performance-metrics)
+- [Confluent article on monitoring Kafka](https://docs.confluent.io/current/kafka/monitoring.html)
+- [New Relic article on monitoring Kafka](https://blog.newrelic.com/engineering/new-relic-kafkapocalypse/)
+
+## Data Privacy and Removing Records
+Removing data from Kafka requires special planning and consideration, since it utilizes an append-only log. In this section you will learn about strategies and privacy regulations related to removing Kafka records.
+
+- Message expiration, wait data after X time, or amount of data.
+- Log compaction. Null messages in a compacted topic delete the data for that key.
+  - Changing the value of a compacted topic into `null` wil cause all messages with that key to be dropped
+  - Log compaction timing setting to be aware of
+  - It may take to long for the data to be compacted and deleted
+- User data may be spread through many topics and not always key on user_id
+
+### Encrypted User Keys
+- User data is encrypted with a special key per user
+- The key is used to decrypt and access the data
+- [Daniel Lebrero invented this way](https://danlebrero.com/2018/04/11/kafka-gdpr-event-sourcing/)
+- Create a topic with an encryption key for every user, encrypt all other topic data for the user with that key
+  
+### Summary
+- Privacy regulations like GDPR and CCPA are increasingly common and require applications to give users the right to be forgotten
+- You can accomplish this with message expiration on topics that is of shorter duration than your requirement
+- You may also use log compaction with null messages to delete data
+- The best approach is to use [Daniel Lebrero’s Encrypted User Keys strategy](https://danlebrero.com/2018/04/11/kafka-gdpr-event-sourcing/)
+
+### Further reading
+- [Confluent blog post on GDPR and the right to be forgotten](https://www.confluent.io/blog/handling-gdpr-log-forget/)
+- [Daniel Lebrero’s Encrypted User Keys strategy](https://danlebrero.com/2018/04/11/kafka-gdpr-event-sourcing/)
 
 
+# Data Schemas
+This section introduces the concept of data schemas and why they are a critical part of real world stream processing applications.
+
+## What are Data Schemas
+- Data schemas help us define:
+  - The shape of the data
+  - The names of fields
+  - The expected types of values
+  - Whether certain data fields are optional or required.
+- Data schemas provide expectations for applications so that they can properly ingest or produce data that match that specification
+- Data schemas are used for communication between software
+- Data schemas can help us create more efficient representations with compression
+- Data schemas help systems develop independently of each other
+- Data schemas are critical in data systems and applications today
+  - gRPC in Kubernetes
+    - Protocol buffer schema languaga
+  - Apache Avro in the Hadoop Ecosystem
+## Glossary
+- Data Schema - Define the shape of a particular kind of data. Specifically, data schemas define the expected fields, their names, and value types for those fields. Data schemas may also indicate whether fields are required or optional.
+- Apache Avro - A data serialization framework which includes facilities for defining and communicating data schemas. Avro is widely used in the Kafka ecosystem and data engineering generally.
+- Record (Avro) - A single encoded record in the defined Avro format
+- Primitive Type (Avro) - In Avro, a primitive type is a type which requires no additional specification - null, boolean, int, long, float, double, bytes, string.
+- Complex Type (Avro) - In Avro, a complex type models data structures which may involve nesting or other advanced functionality: records, enums, maps, arrays, unions, fixed.
+- Schema Evolution - The process of modifying an existing schema with new, deleted, or modified fields.
+- Schema Compatibility - Determines whether or not two given versions of a schema are usable by a given client
+- Backward Compatibility - means that consumer code developed against the most recent version of an Avro Schema can use data using the prior version of a schema without modification.
+- Forward Compatibility - means that consumer code developed against the previous version of an Avro Schema can consume data using the newest version of a schema without modification.
+- Full Compatibility - means that consumers developed against the latest schema can consume data using the previous schema, and that consumers developed against the previous schema can consume data from the latest schema as well. In other words, full compatibility means that a schema change is both forward and backward compatible.
+- None Compatibility - disables compatibility checking by Schema Registry.
+
+
+
+
+
+
+-----------------------------------------------------------------------------------------
 # Kinesis
 AWS Streaming. Based on **shards**.
 Has producer and consumers.
@@ -345,6 +592,14 @@ A shard is the throughput unit, a single shard can handle 1Mb/sec or 1000 reques
 - Sends data accordning to the partition key.
 - Make sure it is evenly distributed, will help.
 
+## Best Practices
+- Aggregate records
+- Compress the data
+- Keys should be perfectly balanced (Randomized, like an ID or somethign similar)
+- Method to split and merge shards
+- Max acceptable latency [AWS Best practices talk](https://www.youtube.com/watch?v=jKPlGznbfZ0)
+- [Kinesis Shard Calculator](https://comcastsamples.github.io/KinesisShardCalculator/)
+
 ### Producers
 You can produce with the aws API with put_records or put_record.
 
@@ -352,11 +607,23 @@ You can produce with the aws API with put_records or put_record.
 Kinesis library
 Event based using Lambda, may be useful to process it and sent it to another service with lambda.
 
+## Appendix
+
+### Messages compression types table
+| Algorithm | Pros                                     | Cons                                                   |
+| --------- | ---------------------------------------- | ------------------------------------------------------ |
+| lz4       | fast compression and decompression       | not a high compression ratio                           |
+| snappy    | fast compression and decompression       | not a high compression ratio                           |
+| zstd      | high compression ratio                   | not as fast as lz4 or snappy                           |
+| gzip      | widely-supported, high compression ratio | cpu-intensive, significantly slower than lz4 or snappy |
 
 
-### Optional Further Research in Kafka Topics
-- [Kafka topic settings documentation](https://kafka.apache.org/documentation.html#topicconfigs)
-- [Confluent blog post on Partitioning](https://www.confluent.io/blog/how-choose-number-topics-partitions-kafka-cluster)
+## Additional Resources Kinesis
+- [Reading Data from Amazon Kinesis Data Streams](https://docs.aws.amazon.com/streams/latest/dev/building-consumers.html)
+- [Best practices for consuming Amazon Kinesis Data Streams using AWS Lambda](https://aws.amazon.com/blogs/big-data/best-practices-for-consuming-amazon-kinesis-data-streams-using-aws-lambda/)
+- [AWS Streaming Data Solution for Amazon Kinesis](https://aws.amazon.com/solutions/implementations/aws-streaming-data-solution-for-amazon-kinesis/?did=sl_card&trk=sl_card)
+- [How to replay in a stream data pushed to S3 from AWS Firehose?](https://stackoverflow.com/questions/53745384/how-to-replay-in-a-stream-data-pushed-to-s3-from-aws-firehose)
+
 
 
   
@@ -364,3 +631,5 @@ Event based using Lambda, may be useful to process it and sent it to another ser
 [Quora]: https://www.quora.com/What-is-the-difference-between-the-ETL-and-ELT
 [kafka-partitions]: ./Images/Kafka_partitions.png "airflow-diagram"
 [topic_ordering]: ./Images/topic_ordering.png "how-airflow-works"
+[time_value_data]: ./Images/DataLoseValue.png "Data time value"
+[diagram_compression]: ./Images/CompressionDiagram.png "Compression"
