@@ -441,9 +441,57 @@ CQL and some key differences with SQL
 Primary Key, Partition Key, and Clustering Column
 The WHERE clause
 
+## Document DB
+### MongoDB
+- Document database
+- Modelled acording to the queries you use
+- Embedded vs Link
+  - Embedded: means complete denormalization (All data is in a single document)
+  - Link: Means it has some ids to access other docuemnts
+- How to know when to use Embedded or Link:
+  - How often does the embedded information get accesed?
+  - Is the data queried using embedded information?
+  - Does the embedded information chnage often?
+
+#### Data Modeling
+![MongoDataModelling][MongoDataModelling]
+
+#### Design Patterns
+- Schema versioning. Have a field with schema version
+- Batch updater on the backend, when loaded change the schema version.
+
+- Bucket Pattern:
+  - Tabular approach vs Document approach
+    - Tabular: Each sensor reading is a row or document (Not good)
+    - Document approach: Save by buckets or intervals, kind of partitioned
+- **The computed pattern**
+  - Never recompute what you can precompute or already computed
+  - Reads are often more common than writes
+  - Compute on write is less work than compute on read
+  - When updating the database, update some summary records
+  - Can be thought of as a caching pattern
+![ComputedPattern]
+
+![ExamplePatterns]
+![SummaryDataModeling]
+[Basic MongoDb Tutorial](https://www.youtube.com/watch?v=3GHZd0zv170&t=0s)
+
+
+# WHEN TO USE WHAT?
+| SQL                            | NO SQL                                |
+| ------------------------------ | ------------------------------------- |
+| Access patterns aren't defined | Access pattern is defined             |
+| Perform flexible queries       | Primery Key is known                  |
+| Perform relational queries     | Data model fits Ex. Graphs            |
+| Enforce Field Constraints      | Need high performance and low latency |
+| Want to use SQL                |                                       |
+
 
 
 
 [//]: <> (Links and some external resources.)
-
+[MongoDataModelling]: ./images/MongoDataModelling.png
 [fact_dimension]: ./images/facts_dimension_tables.png
+[ComputedPattern]: ./images/ComputedPattern.png
+[ExamplePatterns]: ./images/ExamplePatterns.png
+[SummaryDataModeling]: ./images/SummaryDataModeling.png
