@@ -562,6 +562,7 @@ This section introduces the concept of data schemas and why they are a critical 
   - gRPC in Kubernetes
     - Protocol buffer schema languaga
   - Apache Avro in the Hadoop Ecosystem
+
 ## Glossary
 - Data Schema - Define the shape of a particular kind of data. Specifically, data schemas define the expected fields, their names, and value types for those fields. Data schemas may also indicate whether fields are required or optional.
 - Apache Avro - A data serialization framework which includes facilities for defining and communicating data schemas. Avro is widely used in the Kafka ecosystem and data engineering generally.
@@ -575,11 +576,169 @@ This section introduces the concept of data schemas and why they are a critical 
 - Full Compatibility - means that consumers developed against the latest schema can consume data using the previous schema, and that consumers developed against the previous schema can consume data from the latest schema as well. In other words, full compatibility means that a schema change is both forward and backward compatible.
 - None Compatibility - disables compatibility checking by Schema Registry.
 
+## Data Streaming with Schemas
+- Why they matter?
+  - Data streams are constantly evolving
+  - No schema = broken consumer on every data change
+  - Schemas allow consumers to function without updates
+  - Schemas provides independe and scalanbility
+- Summary:
+  - Data schemas help systems evolve independently from each other. This is beneficial at an application and an organizational level within our companies.
+  - Data schemas describe the expected keys, value types, and whether certain keys are optional or required.
+  - Data schemas can be used to create more efficient representations of our data models
+
+## Apache Avro
+Apache Avro is a widely used data schema system in the data engineering space, and especially in the Apache Kafka ecosystem. In this section, we’ll review key concepts as they relate to Avro and Stream Processing.
+
+- Why not json?
+  - Malformed is easily
+  - Doesn't validate the type of fields
+  - Is not binary (Latency and overhead added)
+
+- Avro
+  - Is a data serialization that uses binary compression
+  - Can not be malformed
+  - validate field types
+  - Has lower latency and overhead
+  - Avro is used widely in data engineering and the Kafka ecosystem
+  - They get also the Avro instructions on how deserealize differentiate with gRPC and ProtocolBuffers
+
+### Avro Schema key points
+- Apache Avro records are defined in JSON.
+- Avro records include a required name, such as "user"
+- Avro records must include a type defined as record
+- Avro records may optionally include a namespace, such as "com.udacity"
+- Avro records are required to include an array of fields that define the names of the expected fields and their associated type. Such as "fields": [{"name": "age", "type": "int"}]
+- Avro can support optional fields by specifying the field type as either null or some other type. Such as "fields": [{"name": "age", "type": [“null”, "int"]}]
+- Avro records are made up of complex and primitive types
+- Complex types are other records, arrays, maps, and others
+- Please reference the[ Avro documentation](https://avro.apache.org/docs/1.8.2/spec.html#schemas) for full documentation and additional examples
+- Here is what a stock ticker price change schema might look like: 
+```json
+{
+  "type": "record",
+  "name": "stock.price_change",
+  "namespace": "com.udacity",
+  "fields": [
+      {"name": "ticker", "type": "string"},
+      {"name": "prev_price", "type": "int"},
+      {"name": "price", "type": "int"},
+      {"name": "cause", "type": ["null", "string"]}
+  ]
+}
+```
+
+### Avro Data Types
+- Full documentation is available on the [Avro website](https://avro.apache.org/docs/1.8.2/spec.html#schema_primitive)
+- [Primitive Types](https://avro.apache.org/docs/1.8.2/spec.html#schema_primitive) should be familiar, as they closely mirror the built-in types for many programming languages.
+  - null
+  - boolean
+  - int
+  - long
+  - float
+  - double
+  - bytes
+  - string
+- [Complex Types](https://avro.apache.org/docs/1.8.2/spec.html#schema_complex) allow nesting and advanced functionality.
+  - records
+  - enums
+  - maps
+  - arrays
+  - unions
+  - fixed
+
+### Optional Further Research into Apache Avro
+- [Python fastavro Library](https://fastavro.readthedocs.io/en/latest/index.html)
+- [Apache Avro Specification](https://avro.apache.org/docs/1.8.2/spec.html#Maps)
+
+## Apache Avro and Kafka
+The Apache Kafka development community decided early on to incorporate [support for Avro into Kafka and Kafka ecosystem tools](https://www.confluent.io/blog/avro-kafka-data/). In this section, you will learn how to use Avro with Kafka.
+
+**Apache Avro and Kafka - Helpful Documentation**
+- `confluent_kafka_python` [Avro Producer](https://docs.confluent.io/current/clients/confluent-kafka-python/index.html?highlight=partition#confluent_kafka.avro.AvroProducer)
+- `confluent_kafka_python` [Avro Consumer](https://docs.confluent.io/current/clients/confluent-kafka-python/index.html?highlight=partition#confluent_kafka.avro.AvroConsumer)
+
+## Schema Registry
+[Confluent Schema Registry](https://docs.confluent.io/current/schema-registry/index.html) is an open-source tool that provides centralized Avro Schema storage. In this section, you’ll learn how Schema Registry can improve your Kafka Stream Processing applications.
+
+- Sending the schema on the run for each message will increase latency, size of files and networking overhead
+- Schema Registry stores state in Kafka itself
+- Schemas only need to be sent to Schema Registry once
+- Clients fetch schemas as needed from the registry
+- Does not support deletes
+- Has an HHTP REST Interface
+- May use with any application, not just Kafka
+
+**Schema Registry Architecture**
+- Built in Scala and Java, runs on the JVM
+- high Portable, runs on every OS
+- Stores all of its state in Kafka topics, not a database
+- Exposes and HTTP web-server with a REST APU
+- Can run standalone or clustered many nodes
+- Uses Zookeeper to choose leader in cluster mode
+![schemaRegistry]
+
+### Schema Registry - Summary
+- Provides an HTTP REST API for managing Avro schemas
+- Many Kafka clients natively support Schema Registry interactions for you
+- Reduces network overhead, allowing producers and consumers to register schemas one time
+- Simplifies using Avro, reducing the barrier to entry for developers
+- Uses a Kafka topic to store state
+- Deployed as one or more web servers, with one leader
+- Uses ZooKeeper to manage elections
+
+### Schema Registry - Optional Further Research
+- `confluent_kafka_python` [Avro and Schema Registry support](https://docs.confluent.io/current/clients/confluent-kafka-python/index.html?highlight=partition#module-confluent_kafka.avro)
+- [Schema Registry Overview](https://docs.confluent.io/current/schema-registry/index.html)
+- [Schema Registry HTTP API Documentation](https://docs.confluent.io/current/schema-registry/develop/api.html)
+
+## Schema Evolution and Compatibility
+Schemas change over time with new requirements. This process of schema change is known as Schema Evolution.
+In this section, you will see how Avro and Schema Registry can aid in the process of Schema Evolution.
+We’ll also discuss in this series of concepts how evolving schemas can be forward or backward compatible with previous versions.
+
+**Schema Evolution**
+The process of changing the schema of a given dataset is referred to as schema evolution. Modifying, adding or removing a field are all forms of a schema evolution
 
 
+### Schema Compatibility
+Schema registry tracks compatibility between schema versions
+- If the schema is compatible, the consumer continues consumption
+- If the schema is incompatible, the consumer will cease consumption
+- Prevents miss process data and validation
+- Schema Compatibility
 
 
+- The process of schema change is known as Schema Evolution
+- Schema Evolution is caused by a modification to an existing data schema
+  - Adding or removing a field
+  - Making a field optional
+  - Changing a field type
+- Schema Registry can track schema compatibility between schemas
+  - Compatibility is used to determine whether or not a particular schema version is usable by a data consumer
+  - Consumers may opt to use this compatibility information to preemptively refuse to process data that is incompatible with its current configuration
+  - Schema Registry supports four categories of compatibility
+  - Backward / Backward Transitive
+  - Forward / Forward Transitive
+  - Full / Full Transitive
+  - None
+- Managing compatibility requires both producer and consumer code to determine the compatibility of schema changes and send those updates to Schema Registry
 
+#### Backward compatibility
+- [Backward compatibility](https://docs.confluent.io/current/schema-registry/avro.html#backward-compatibility) means that consumer code developed against the most recent version of an Avro Schema can use data using the prior version of a schema without modification.
+  - The deletion of a field or the addition of a new optional field is backward compatible changes.
+  - Update consumers before updating producers to ensure that consumers can handle the new data type
+- The `BACKWARD` compatibility type indicates compatibility with the current version (`N`) and the immediately prior version (`N-1`)
+  - Unless you specify otherwise, Schema Registry always assumes that changes are BACKWARD compatible
+- The `BACKWARD_TRANSITIVE` compatibility type indicates compatibility with all **prior versions** (`1 → N`)
+- **If Producer making backward compatible, need consumers to update to the lastest version of the schema before we realease the new schema**
+
+#### Forward compatibility
+- [Forward compatibility](https://docs.confluent.io/current/schema-registry/avro.html#forward-compatibility) means that consumer code developed against the previous version of an Avro Schema can consume data using the newest version of a schema without modification
+  - The deletion of an optional field or the addition of a new field is forward compatible changes
+  - Producers need to be updated before consumers
+- The `FORWARD` compatibility type indicates that data produced with the latest schema (`N`) is usable by consumers using the previous schema version (`N-1`)
+- The `BACKWARD_TRANSITIVE` compatibility type indicates that data produced with the latest schema (N) is usable by all consumers using any previous schema version (`1 → N-1`)
 -----------------------------------------------------------------------------------------
 # Kinesis
 AWS Streaming. Based on **shards**.
@@ -633,3 +792,4 @@ Event based using Lambda, may be useful to process it and sent it to another ser
 [topic_ordering]: ./Images/topic_ordering.png "how-airflow-works"
 [time_value_data]: ./Images/DataLoseValue.png "Data time value"
 [diagram_compression]: ./Images/CompressionDiagram.png "Compression"
+[schemaRegistry]: ./Images/SchemaRegistry.png "Schema Registry"
