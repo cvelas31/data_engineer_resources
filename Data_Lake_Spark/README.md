@@ -535,6 +535,90 @@ Recent years drove the evolution of DWH.
 - Everything is open, issue with data governance.
 - Should it work in parallel, replce DWh or what?
 
+
+# Tips and practical tricks
+
+## AWS EMR TIPS AND PROBLEMS
+### Cannot connect through SSH to Cluster
+- Validate it is available and has network set properly
+- Validate the it accepts in the security group SSH connection from your IP
+
+### Reading and Writing from/to S3
+- Avoid reading data from S3 with Spark. It's better to pass the data to hdfs and read it from it.
+- Avoid writing to S3 with Spark. It's better to pass the data to hdfs and send it to S3.
+- The best way to do it is using `s3-dist-cp`
+  - Ex:
+    - Sending data: `s3-dist-cp -Dfs.s3.canned.acl=BucketOwnerFullControl --src hdfs:///example-parquet --dest s3://bucket/example/parquet`
+    - Reading data: `s3-dist-cp --src s3://bucket/example/parquet/ --dest hdfs:///example-parquet --srcPattern .*\.parquet`
+
+### Writing from Spark to HDFS
+- Permission issues use the following:
+  - `sudo su hdfs`Get into hdfs as sudo
+  - `hdfs dfs -chown livy` Grant write permissions to user
+- `s3-dist-cp --src ... --dest ... --srcPattern .*\.parquet` Read all files ended in parquet
+
+### [ACL Permissions Spark and Hadoop](https://stackoverflow.com/a/61491834/7927471)
+```python
+sc=spark.sparkContext
+hadoop_conf=sc._jsc.hadoopConfiguration()
+hadoop_conf.set("fs.s3a.fast.upload","true")
+hadoop_conf.set("mapreduce.fileoutputcommitter.algorithm.version","2")
+hadoop_conf.set("fs.s3a.server-side-encryption-algorithm", "AES256")
+hadoop_conf.set("fs.s3a.canned.acl","BucketOwnerFullControl")
+hadoop_conf.set("fs.s3a.acl.default","BucketOwnerFullControl")
+```
+
+### Process multiple small files
+**DO NOT DO THIS**
+Contanate or merge those files into bigger files and process those bigger files
+
+### Adding a row number
+- Adding a row number as monotonically increasing id will alway be the same when reading form the same source file.
+
+### [Dealing with bad formatted files/structure/directory and filterin by datetime on loading](https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html)
+
+
+
+
+### Helper functions
+- Compare schemas and validates differences:
+```python
+def compare_schemas(schema1: StructType, schema2: StructType):
+    """
+    Compares schemas
+    """
+    
+    missing_fields_schema1 = set(schema1.fields) - set(schema2.fields)
+    missing_fields_schema2 = set(schema2.fields)- set(schema1.fields)
+    if len(missing_fields_schema1)>0 or len(missing_fields_schema2)>0:
+        message = "Differences: "
+        message += f" - Fields on schema1 that are not in schema2: {missing_fields_schema1}"
+        message += f" - Fields on schema2 that are not in schema1: {missing_fields_schema2}"
+        raise KeyError(f"""Not compatible schemas. {message}""")
+```
+- Infer Schema in Json column
+```python
+def infer_json_schema(df, json_column):
+    json_type = df.schema[json_column].dataType.jsonValue()
+    json_schema = None
+    if isinstance(json_type, dict):
+        pass
+    elif json_type=="string":
+        json_schema = spark.read.json(df.select(json_column).rdd.map(lambda row: getattr(row,json_column))).schema
+        df = df.withColumn(json_column, F.from_json(F.col(json_column), json_schema))
+    else:
+        print("Json type not posible to infer json schema")
+    return df, json_schema
+```
+
+### HDFS Common commands
+- `hadoop fs -ls /` List files
+- `hadoop fs -rm -r /example` Remove files and directory
+
+
+# External resources
+- [Spark2.x Best practices](https://developer.hpe.com/blog/tips-and-best-practices-to-take-advantage-of-spark-2x/)
+
 [//]: <> (Links and some external resources.)
 [Peter Norvig's original blog post]: http://norvig.com/21-days.html
 [interactive version]: http://people.eecs.berkeley.edu/~rcs/research/interactive_latency.html
