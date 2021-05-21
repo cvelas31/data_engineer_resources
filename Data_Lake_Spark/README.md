@@ -537,7 +537,6 @@ Recent years drove the evolution of DWH.
 
 
 # Tips and practical tricks
-
 ## AWS EMR TIPS AND PROBLEMS
 ### Cannot connect through SSH to Cluster
 - Validate it is available and has network set properly
@@ -577,9 +576,6 @@ Contanate or merge those files into bigger files and process those bigger files
 
 ### [Dealing with bad formatted files/structure/directory and filterin by datetime on loading](https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html)
 
-
-
-
 ### Helper functions
 - Compare schemas and validates differences:
 ```python
@@ -615,6 +611,8 @@ def infer_json_schema(df, json_column):
 - `hadoop fs -ls /` List files
 - `hadoop fs -rm -r /example` Remove files and directory
 
+## Glue
+### [Memory management in Glue](https://aws.amazon.com/blogs/big-data/optimize-memory-management-in-aws-glue/)
 
 # External resources
 - [Spark2.x Best practices](https://developer.hpe.com/blog/tips-and-best-practices-to-take-advantage-of-spark-2x/)
