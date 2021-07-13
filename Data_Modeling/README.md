@@ -332,7 +332,7 @@ DO UPDATE
     SET customer_street  = EXCLUDED.customer_street;
 ```
 
------
+----------------------
 # No Relational Databases (NOSQL)
 
 ## When Not to Use SQL:
@@ -441,9 +441,109 @@ CQL and some key differences with SQL
 Primary Key, Partition Key, and Clustering Column
 The WHERE clause
 
+## Document DB
+### MongoDB
+- Document database
+- Modelled acording to the queries you use
+- Embedded vs Link
+  - Embedded: means complete denormalization (All data is in a single document)
+  - Link: Means it has some ids to access other docuemnts
+- How to know when to use Embedded or Link:
+  - How often does the embedded information get accesed?
+  - Is the data queried using embedded information?
+  - Does the embedded information chnage often?
+
+#### Data Modeling
+![MongoDataModelling][MongoDataModelling]
+
+#### Design Patterns
+- Schema versioning. Have a field with schema version
+- Batch updater on the backend, when loaded change the schema version.
+
+- Bucket Pattern:
+  - Tabular approach vs Document approach
+    - Tabular: Each sensor reading is a row or document (Not good)
+    - Document approach: Save by buckets or intervals, kind of partitioned
+- **The computed pattern**
+  - Never recompute what you can precompute or already computed
+  - Reads are often more common than writes
+  - Compute on write is less work than compute on read
+  - When updating the database, update some summary records
+  - Can be thought of as a caching pattern
+![ComputedPattern]
+
+![ExamplePatterns]
+![SummaryDataModeling]
+[Basic MongoDb Tutorial](https://www.youtube.com/watch?v=3GHZd0zv170&t=0s)
 
 
+# WHEN TO USE WHAT?
+| SQL                            | NO SQL                                |
+| ------------------------------ | ------------------------------------- |
+| Access patterns aren't defined | Access pattern is defined             |
+| Perform flexible queries       | Primery Key is known                  |
+| Perform relational queries     | Data model fits Ex. Graphs            |
+| Enforce Field Constraints      | Need high performance and low latency |
+| Want to use SQL                |                                       |
+
+# Redis (Streaming)
+**What is Redis?**
+Redis: A database used primarily for caching; this means it is optimized for fast reads and writes.
+Great for rapid prototyping
+
+**Why is Redis important?**
+Used by a lot of companies
+Great for rapid prototyping of new applications
+It can take you well beyond a proof of concept, all the way to production without having to create or maintain schemas
+Later you can create a structured schema, and migrate to a relational database
+You can stick with Redis, and create a nightly extract for reports
+Redis is super fast in terms of read/write execution and in the development process
+
+**Using Redis Data Types**
+Redis data is stored in various data types:
+- A sorted set is a Redis collection that includes a value and a score.
+- A score is a secondary index. We use zadd to add records to a sorted set.
+- A Redis key/value pair is a simple key with one value.
+- We use the set command to set the value.
+
+## Base64
+**What is Base64?**
+Base64: An encoding format used by computers to transmit and store information.
+**Base64 is the encoding of the Internet**
+Example: https://ordersometakeout.com?coordinates=ODIuODYyOMKwIFMsIDEzNS4wMDAwwrAgRQ==
+
+Translation: Deliver my takeout to these coordinates: 82.8628° S, 135.0000° E
+
+Base64 is used to make the text more readable by servers
+In this example, the URL has a long encoded string after coordinates=
+Decoded the string is the latitude and longitude where the takeout is needed
+
+**All Kafka Data Originates Somewhere**
+Any data you read from a Kafka Source, originates somewhere else. Data can come from:
+- Databases
+- IoT devices
+- Log Files
+- Applications
+- Other sources
+
+**Direct Source or Indirect Source**
+When faced with the decision in this example of whether to stream directly from the source as a new project or to stream from the current database, should consider these implications:
+
+- When streaming directly from the source, the quality is high
+  - This is because it is directly written by the Core Application
+  - The Time to Value can be slower
+  - Time to Value is the time it takes for a customer to benefit from your service
+  - The time to value can be slower due to coordination with the main development team who supports ongoing work on the core application
+- The team often has several high priority initiatives
+- Regression risk of modifying the core application is moderate due to the critical role it has in performing business functions
+- Choosing an indirect source can make Time to Value lower
+  - Reducing development strain on the core team CLICK
+  - Reducing risk to the main application
+- An indirect source may have lower quality data because it is not directly produced by the core system
 
 [//]: <> (Links and some external resources.)
-
+[MongoDataModelling]: ./images/MongoDataModelling.png
 [fact_dimension]: ./images/facts_dimension_tables.png
+[ComputedPattern]: ./images/ComputedPattern.png
+[ExamplePatterns]: ./images/ExamplePatterns.png
+[SummaryDataModeling]: ./images/SummaryDataModeling.png
