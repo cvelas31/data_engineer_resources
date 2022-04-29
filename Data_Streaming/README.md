@@ -1787,7 +1787,7 @@ If the duplicate task is faster, the result of task 2 will be submitted to the j
 
 [//]: <> (Links and some external resources.)
 [Quora]: https://www.quora.com/What-is-the-difference-between-the-ETL-and-ELT
-[kafka-partitions]: ./Images/Kafka_partitions.png "airflow-diagram"
+[kafka-partitions]: ./Images/Kafka_Partitions.png "airflow-diagram"
 [topic_ordering]: ./Images/topic_ordering.png "how-airflow-works"
 [time_value_data]: ./Images/DataLoseValue.png "Data time value"
 [diagram_compression]: ./Images/CompressionDiagram.png "Compression"
